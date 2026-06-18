@@ -111,11 +111,17 @@
 								if(!$dominioBorrado){
                                     $ip_visita = mysqli_real_escape_string($link, $ip_visita);
                                     $dominio = mysqli_real_escape_string($link, $dominio);
+
+                                    // Resolver país en tiempo de ingesta para evitar cálculos pesados en estadísticas
+                                    $codigo_pais = getCountryFromIP($ip_visita, 'code');
+                                    if (empty($codigo_pais)) {
+                                        $codigo_pais = 'ZZ';
+                                    }
 									
-                                    $insert_values[] = "('$newDate', '$ip_visita', '$dominio', 1)";
+                                    $insert_values[] = "('$newDate', '$ip_visita', '$codigo_pais', '$dominio', 1)";
                                     
                                     if (count($insert_values) >= $batch_size) {
-                                        $query = "INSERT INTO visita_dominio (fecha_visita, ip_visita, dominio, activo_visita) VALUES " . implode(',', $insert_values);
+                                        $query = "INSERT INTO visita_dominio (fecha_visita, ip_visita, codigo_pais, dominio, activo_visita) VALUES " . implode(',', $insert_values);
                                         mysqli_query($link, $query);
                                         $insert_values = array();
                                     }
@@ -131,7 +137,7 @@
 
     // Insertar los registros restantes que no alcanzaron el tamaño del lote
     if (count($insert_values) > 0) {
-        $query = "INSERT INTO visita_dominio (fecha_visita, ip_visita, dominio, activo_visita) VALUES " . implode(',', $insert_values);
+        $query = "INSERT INTO visita_dominio (fecha_visita, ip_visita, codigo_pais, dominio, activo_visita) VALUES " . implode(',', $insert_values);
         mysqli_query($link, $query);
         $insert_values = array();
     }

@@ -52,10 +52,10 @@ $batchMax = min($maxId, $lastId + 300000);
 $ok = mysqli_query($link, "
     INSERT INTO visita_dominio_group (id_visita, fecha_visita, ip_visita, dominio, total)
     SELECT
-        MIN(id_visita)    AS id_visita,
-        MIN(fecha_visita) AS fecha_visita,
+        MAX(id_visita)    AS id_visita,
+        MAX(fecha_visita) AS fecha_visita,
         ip_visita,
-        MIN(dominio)      AS dominio,
+        MAX(dominio)      AS dominio,
         COUNT(*)          AS total
     FROM visita_dominio
     WHERE activo_visita = 1
@@ -64,7 +64,8 @@ $ok = mysqli_query($link, "
     GROUP BY ip_visita
     ON DUPLICATE KEY UPDATE
         total        = total + VALUES(total),
-        fecha_visita = LEAST(fecha_visita, VALUES(fecha_visita))
+        fecha_visita = GREATEST(fecha_visita, VALUES(fecha_visita)),
+        id_visita    = GREATEST(id_visita, VALUES(id_visita))
 ");
 
 if (!$ok) {
