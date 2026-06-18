@@ -1,0 +1,1522 @@
+<?php
+    include_once 'includes/config.php';
+    include_once 'includes/security.php';
+    include_once 'geoIp/geoiploc.php';
+
+    date_default_timezone_set('America/Managua');
+    
+    session_start();
+    $id         = $_SESSION['id_u'];
+    $nombre     = $_SESSION['nombre'];
+    $apellido   = $_SESSION['apellido'];
+    $activo     = $_SESSION['activo'];
+    $tipo       = $_SESSION['tipo_usuario'];
+    
+    /*optener solo el primer nombre y el primer apellido del profesor*/
+    $nombre = explode(' ', $nombre);
+    @$nombre = $nombre[0];
+    
+    $apellido = explode(' ', $apellido);
+    @$apellido = $apellido[0];
+    
+    $consult = mysqli_query($link,"SELECT * FROM usuario WHERE id_usuario = '$id'");
+    $row = mysqli_fetch_array($consult);
+    
+    if (empty($id) || empty($activo) || $tipo != 1) {
+        header("Location: index.php");
+    } else {
+        $fechaGuardada = $_SESSION["ultimoAcceso"];
+        $ahora = date("Y-n-j H:i:s");
+        $tiempo_transcurrido = (strtotime($ahora)-strtotime($fechaGuardada));
+        
+        //echo $tiempo_transcurrido;
+        //comparamos el tiempo transcurrido
+        if($tiempo_transcurrido >= 1200) {
+            //si pasaron 20 minutos o más
+            session_destroy(); // destruyo la sesión
+            session_start();
+            $_SESSION['nombre_usuario']     = $nombre;
+            $_SESSION['apellido_usuario']   = $apellido;
+            $_SESSION['correo_usuario']     = $row['email_u'];
+
+            header("Location: lockscreen.php"); //envío al usuario a la pag. de autenticación
+            //sino, actualizo la fecha de la sesión
+        } else {
+            $_SESSION["ultimoAcceso"] = $ahora;
+        }
+    }
+    ?>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>TCP/UDP Load Balancing</title>
+        <!-- Favicons -->
+        <link rel="shortcut icon" href="img/logo_icono.png">
+        <!-- Tell the browser to be responsive to screen width -->
+        <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+        <!-- Bootstrap 3.3.7 -->
+        <link rel="stylesheet" href="assets/bower_components/bootstrap/dist/css/bootstrap.min.css">
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="assets/bower_components/font-awesome/css/font-awesome.min.css">
+        <!-- Ionicons -->
+        <link rel="stylesheet" href="assets/bower_components/Ionicons/css/ionicons.min.css">
+        <!-- Theme style -->
+        <link rel="stylesheet" href="assets/dist/css/AdminLTE.min.css">
+        <!-- AdminLTE Skins. Choose a skin from the css/skins
+            folder instead of downloading all of them to reduce the load. -->
+        <link rel="stylesheet" href="assets/dist/css/skins/_all-skins.min.css">
+
+        <!-- Select2 -->
+        <link rel="stylesheet" href="assets/bower_components/select2/dist/css/select2.min.css">
+
+        <!-- bootstrap datepicker -->
+        <link rel="stylesheet" href="assets/bower_components/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css">
+
+        <!-- Pace style -->
+        <link rel="stylesheet" href="assets/plugins/pace/pace.min.css">
+        <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+        <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+        <![endif]-->
+        <!-- Google Font -->
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
+        
+        <link rel="stylesheet" href="css/cerulean/bootstrap.css" media="screen">
+
+        <!-- bootstrap wysihtml5 - text editor -->
+        <link rel="stylesheet" href="assets/bower_components/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css">
+
+        <!-- DataTables -->
+        <link rel="stylesheet" href="assets/bower_components/datatables.net-bs/css/dataTables.bootstrap.min.css">
+        <script type="text/javascript" src="js/notifIt.js"></script>
+        <link rel="stylesheet" type="text/css" href="css/notifIt.css">
+
+        <link rel="stylesheet" type="text/css" href="assets/helpers/boilerplate.css">
+        <link rel="stylesheet" type="text/css" href="assets/helpers/grid.css">
+        <link rel="stylesheet" type="text/css" href="assets/helpers/utils.css">
+        <!-- ICONS -->
+        <link rel="stylesheet" type="text/css" href="assets/icons/fontawesome/fontawesome.css">
+        <!-- SNIPPETS -->
+        <link rel="stylesheet" type="text/css" href="assets/snippets/user-profile.css">
+        <link rel="stylesheet" type="text/css" href="assets/snippets/mobile-navigation.css">
+        <!-- Frontend theme -->
+        <link rel="stylesheet" type="text/css" href="assets/themes/frontend/layout.css">
+        <!-- <link rel="stylesheet" type="text/css" href="assets/themes/frontend/color-schemes/default.css"> -->
+        <!-- Components theme -->
+        <!-- <link rel="stylesheet" type="text/css" href="assets/themes/components/default.css"> -->
+
+        <link rel="stylesheet" href="https://res.cloudinary.com/dcylypyc6/raw/upload/v1571529281/switch-input-all.min_byyosh.css">
+        <link rel="stylesheet" href="css/switch-input-blue_ltmhn2.css">
+
+        <!-- Animate CSS for the css animation support if needed -->
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet" />
+
+        <!-- Include SmartWizard CSS -->
+        <link href="css/demo.css" rel="stylesheet" type="text/css" />
+        <link href="css/smart_wizard_all.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.3/font/bootstrap-icons.css">
+
+        <style>
+            .table,
+            .chosen-disabled .chosen-single,
+            div.selector,
+            .content-box-header.bg-default > .ui-tabs-nav li > a,
+            .content-box-header.bg-gray > .ui-tabs-nav li > a,
+            .content-box-header.bg-white > .ui-tabs-nav li > a,
+            .content-box-header > .ui-tabs-nav li.ui-tabs-active > a,
+            body .content-box-header > .ui-tabs-nav li.ui-tabs-active > a:hover,
+            .pagination > li > a,
+            .pagination > li > span,
+            .btn-link,
+            a {
+                color: #8da0aa;
+            }
+        </style>
+        
+        <!-- Frontend responsive -->
+        <link rel="stylesheet" type="text/css" href="assets/helpers/frontend-responsive.css">
+
+        <script type="text/javascript" src="assets/js-core/jquery-core.js"></script>
+        <script>
+            function not1(){
+                notif({
+                    msg: "Se guardo correctamente",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+        <script>
+            function not2(){
+                notif({
+                    msg: "Algunos campos estan vacios",
+                    type: "error",
+                    position: "center"
+                });
+            }
+        </script>
+        <script>
+            function not3(){
+                notif({
+                    msg: "Los datos se actualizarón correctamente",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+        <script>
+            function not4(){
+                notif({
+                    msg: "Se elimino correctamente",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+        <script>
+            function not5(){
+                notif({
+                    msg: "Error! algo salio mal",
+                    type: "error",
+                    position: "center"
+                });
+            }
+        </script>
+
+        <script>
+            function not6(){
+                notif({
+                    msg: "Datos actualizados!!",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+
+        <script>
+            function not7(){
+                notif({
+                    msg: "El dominio ya existe!!",
+                    type: "error",
+                    position: "center"
+                });
+            }
+        </script>
+
+        <link rel="stylesheet" type="text/css" href="css/dropzone.css" />
+        <script type="text/javascript" src="js/dropzone.js"></script>
+
+        <style type="text/css">
+            .skin-blue .main-header .navbar{
+                background-image: url('img/Heater_waf-2022.png');
+            }
+
+            .select2-container--default .select2-selection--single{
+                border-radius: 0px !important;
+            }
+
+            .select2-container--default .select2-selection--single .select2-selection__rendered{
+                line-height: 22px !important;
+            }
+        </style>
+
+        <style type="text/css">
+            .stepwizard-step p {
+                margin-top: 10px;
+            }
+
+            .stepwizard-row {
+                display: table-row;
+            }
+
+            .stepwizard {
+                display: table;
+                width: 100%;
+                position: relative;
+            }
+
+            .stepwizard-step button[disabled] {
+                opacity: 1 !important;
+                filter: alpha(opacity=100) !important;
+            }
+
+            .stepwizard-row:before {
+                top: 14px;
+                bottom: 0;
+                position: absolute;
+                content: " ";
+                width: 100%;
+                height: 1px;
+                background-color: #ccc;
+                z-order: 0;
+
+            }
+
+            .stepwizard-step {
+                display: table-cell;
+                text-align: center;
+                position: relative;
+            }
+
+            .btn-circle {
+              width: 30px;
+              height: 30px;
+              text-align: center;
+              padding: 6px 0;
+              font-size: 12px;
+              line-height: 1.428571429;
+              border-radius: 15px;
+            }
+            .main-header .header-logo {
+                background: url(img/logo_icono.png) left 50% no-repeat;
+            }
+        </style>
+
+        <style type="text/css">
+            .table {
+                color: #495057 !important;
+            }
+            /* Fonts weight */
+            .tabs-nav li a,
+            .main-header .header-nav > li > a,
+            .hero-heading,
+            .hero-text,
+            h1, h2, h3, h4, h5, h6,
+            .main-header .header-nav > li > a,
+            .hero-heading,
+            .hero-text {
+                font-family: "Raleway", "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-weight: 300;
+            }
+
+            /* Top bar menu */
+            .bg-topbar {
+                background: #fff;
+                border-bottom-color: #eee;
+            }
+            /* Main header */
+
+            .bg-header {
+                background: #fff;
+            }
+            .sticky-active .main-header {
+                box-shadow: 0 0 1px 2px rgba(0, 0, 0, 0.05);
+            }
+            /* Header subnav menu */
+
+            .main-header .header-nav > li > ul {
+                background: #253035;
+            }
+            .main-header .header-nav > li > ul li a:hover {
+                background: rgba(255,255,255,0.05);
+                color: #dce4e8;
+            }
+        </style>
+    </head>
+    <body class="hold-transition skin-blue layout-top-nav">
+        <!-- Site wrapper -->
+        <div class="wrapper">
+            <div class="main-header bg-header wow fadeInDown animated animated" style="visibility: visible;">
+                <div class="container">
+                    <a href="home.php" class="header-logo" style="width: 40px;"></a>
+                    
+                    <ul class="header-nav collapse">
+                        <li class="">
+                            <a href="home.php" title="">
+                                <i class="fa fa-home"></i>
+                                Inicio
+                            </a>
+                        </li>
+
+                        <li class="">
+                            <a href="user.php" title="">
+                                <i class="fa fa-users"></i>
+                                Usuarios
+                            </a>
+                        </li>
+
+                        <li class="">
+                            <a href="rules.php" title="">
+                                <i class="fa fa-code"></i>
+                                Reglas(Tipos de ataque)
+                            </a>
+                        </li>
+
+                        <li class="">
+                            <a href="credencialesMail.php" title="">
+                                <i class="fa fa-envelope"></i>
+                                Configuración de correo
+                            </a>
+                        </li>
+
+                        <li class="">
+                            <a href="#" title="Configuraciones">
+                                <i class="fa fa-gears"></i> Configuraciones
+                                <i class="glyph-icon icon-angle-down"></i>
+                            </a>
+                            <ul>
+                                <li>
+                                    <a href="sitiossl.php" title="">
+                                        <span>
+                                            <img src="img/ssl.png" style="width: 20px;"/> Sitio SSL
+                                        </span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="loadBalancer.php" title="">
+                                        <span>
+                                            <img src="img/load.png" style="width: 20px;"/> Load balancer high availability
+                                        </span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="loadBalancer_tcpudp.php" title="">
+                                        <span>
+                                            <img src="img/load.png" style="width: 20px;"/> TCP/UDP Load Balancing
+                                        </span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="sitio.php" title="">
+                                        <span>
+                                            <img src="img/sitio.png" style="width: 20px;"/> Proteger Sitio
+                                        </span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="whiteList.php" title="">
+                                        <span>
+                                            <img src="img/ip.png" style="width: 20px;"/> IP WhiteList
+                                        </span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="whitelistrule.php" title="">
+                                        <span>
+                                            <img src="img/rules.png" style="width: 20px;"/> WhiteList Rules
+                                        </span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="configuracionextra.php" title="">
+                                        <span>
+                                            <img src="img/settings.png" style="width: 20px;"/> Configuración Extras
+                                        </span>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a href="marketplace_sitio.php" title="">
+                                        <span>
+                                            <img src="img/shop.png" style="width: 20px;"/> Marketplace de Sitios
+                                        </span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <li class="">
+                            <a href="salir.php" title="">
+                                <i class="fa fa-power-off"></i>
+                                Salir
+                            </a>
+                        </li>
+
+                        <li class="">
+                            <a href="timelinerule.php" title="Nuevas reglas" class="dropdown-toggle">
+                                <i class="fa fa-bell"></i>
+                                <?php
+                                     $consultNoti = mysqli_query($link,"SELECT * FROM notificacion_regla
+                                     WHERE activa_notificacion = 1");
+                                     $totalNoti = mysqli_num_rows($consultNoti);
+                                     if($totalNoti > 0)
+                                     echo '<span class="label label-danger" style="position: absolute;top: 20px;right: -7px;">'.$totalNoti.'</span>';
+                                ?>
+                            </a>
+                        </li>
+                    </ul><!-- .header-nav -->
+                </div><!-- .container -->
+            </div>
+            <!-- =============================================== -->
+            <!-- Content Wrapper. Contains page content -->
+            <div class="content-wrapper">
+                <!-- Content Header (Page header) -->
+                <section class="content-header">
+                    <h1>
+                        
+                    </h1>
+                    <ol class="breadcrumb">
+                    </ol>
+                </section>
+                <!-- Main content -->
+                <section class="content">
+                    <?php
+                        $queryTotal = mysqli_query($link, "SELECT * FROM sitio
+                                            WHERE activo_sitio = 1
+                                            ORDER BY sitio.id_sitio DESC");
+                        $totalSitio = 0;
+                        $totalSitio = mysqli_num_rows($queryTotal);
+                    ?>
+                    <!-- /.col -->
+                    <div class="box-header with-border">
+                        <button type="button" id="btnCambios" class="btn btn-success pull-right">
+                            <i class="fa fa-refresh"></i> Aplicar cambios
+                        </button>
+                    </div>
+                     <!-- Custom Tabs -->
+                    <div class="nav-tabs-custom">
+                        <ul class="nav nav-tabs">
+                            <li class="active">
+                                <a href="#tab_1" data-toggle="tab">
+                                <i class="fa fa-shield"></i> Lista de sitios
+                                </a>
+                            </li>
+
+                            <li id="ataquesGrafica">
+                                <a href="#tab_2" data-toggle="tab">
+                                <i class="fa fa-plus"></i> Crear TCP/UDP Load Balancing
+                                </a>
+                            </li>
+
+                            <!-- <li class="dropdown pull-right">
+                                <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                                  Opciones <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li role="presentation">
+                                        <a role="menuitem" tabindex="-1" id="update" href="#0">
+                                            <small> <i class="fa fa-floppy-o"></i> Backup Configuraciones</small>
+                                        </a>
+                                    </li>
+
+                                    <li role="presentation">
+                                        <a role="menuitem" tabindex="-1" href="#0" data-toggle="modal" data-target="#ModalNData">
+                                            <small> <i class="fa fa-refresh"></i> Subir Configuraciones</small>
+                                        </a>
+                                    </li>
+
+                                </ul>
+                            </li> -->
+                        </ul>
+                        <div class="tab-content">
+                            <div class="tab-pane active" id="tab_1">
+                                <div class="box-header">
+                                    <button type="button" class="btn btn-default" style="border-color: green;">
+                                    <img src="img/total2.png" style="width: 5%;"/><?php echo $totalSitio; ?> sitios protegidos
+                                    </button>
+                                </div>
+                                <table id="example1" class="table table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Tipo</th>
+                                            <th>Nombre Sitio</th>
+                                            <th>Fecha Creacion</th>
+                                            <th class="text-center">Dias de Expiración</th>
+                                            <th class="text-center">Opciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                            //optener todos los usuarios
+                                            $query = mysqli_query($link, "SELECT * FROM sitio
+                                                                          WHERE activo_sitio = 1
+                                                                          ORDER BY sitio.id_sitio DESC");
+                                            $i = 1;
+                                            while($row = mysqli_fetch_array($query)){
+                                                $option = '';
+                                                switch($row['tipo_config']){
+                                                    case 'ssl':
+                                                        $imagen = '<img src="img/ssl.png" style="width: 25px;"/>';
+                                                        $option = '
+                                                        <li>
+                                                          <a href="#0" 
+                                                             data-id="'.$row['id_sitio'].'" class="btn3">
+                                                            <img src="img/geo_ip.webp" style="width: 15px;"> Activar Geo Ip
+                                                          </a>
+                                                        </li>
+                                                        ';
+                                                        break;
+                                                    case 'load':
+                                                        $imagen = '<img src="img/load.png" style="width: 25px;"/>';
+                                                        $option = '
+                                                        <li>
+                                                          <a href="#0" 
+                                                             data-id="'.$row['id_sitio'].'" class="btn3">
+                                                            <img src="img/geo_ip.webp" style="width: 15px;"> Activar Geo Ip
+                                                          </a>
+                                                        </li>
+                                                        ';
+                                                        break;
+                                                    case 'load_udp':
+                                                        $imagen = '<img src="img/load.png" style="width: 25px;"/>';
+                                                        break;
+                                                    case 'zimbra':
+                                                        $imagen = '<img src="img/zimbra.png" style="width: 25px;"/>';
+                                                        break;
+                                                    case 'sitio':
+                                                        $imagen = '<img src="img/sitio.png" style="width: 25px;"/>';
+                                                        $option = '
+                                                        <li>
+                                                          <a href="#0" 
+                                                             data-id="'.$row['id_sitio'].'" class="btn3">
+                                                             <img src="img/geo_ip.webp" style="width: 15px;"> Activar Geo Ip
+                                                          </a>
+                                                        </li>
+                                                        ';
+                                                        break;
+                                                    case 'conferencia':
+                                                        $imagen = '<img src="img/jitsi.png" style="width: 25px;"/>';
+                                                        break;
+                                                }
+                                                $fecha_timestamp = strtotime($row['fecha_r_sitio']);
+                                                $fecha_formateada = date("d/m/Y", $fecha_timestamp);
+                                                //calcular dias de expiracion
+                                                $fecha_inicio = new DateTime();
+                                                $fecha_fin = new DateTime($row['fecha_vencimiento']);
+                                                $diferencia = date_diff($fecha_inicio, $fecha_fin);
+                                                $rango_dias = $diferencia->days;
+                                                $color = '';
+                                                if($rango_dias <= 5){
+                                                    $color = 'red';
+                                                } else {
+                                                    $color = 'green';
+                                                }
+
+                                                $stringDia = 'Dias';
+                                                if($rango_dias <= 1){
+                                                    $stringDia = 'Dia';
+                                                }
+                                                echo '
+                                                <tr>
+                                                  <td>'.$i.'</td>
+                                                  <td>'.$imagen.'</td>
+                                                  <td>'.$row['nombre_sitio'].'</td>
+                                                  <td>'.$fecha_formateada.'</td>
+                                                  <td class="text-center"><span class="badge bg-'.$color.'" style="font-size: 10px;">'.$rango_dias.' '.$stringDia.'</span></td>
+                                                  <td class="text-center">
+                                                    <div class="btn-group">
+                                                      <button type="button" class="btn btn-primary">Opciones</button>
+                                                      <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+                                                        <span class="caret"></span>
+                                                        <span class="sr-only">Toggle Dropdown</span>
+                                                      </button>
+                                                      <ul class="dropdown-menu" role="menu">';
+                                                      if($row['activo_geo'] == 0){
+                                                        echo $option;
+                                                      }
+                                                      echo '
+                                                        <li>
+                                                          <a href="#0" 
+                                                             data-id="'.$row['id_sitio'].'" class="btn4">
+                                                            <i class="fa fa-edit"></i> Actualizar
+                                                          </a>
+                                                        </li>
+                                                        <li>
+                                                          <a href="#0" 
+                                                             data-id="'.$row['id_sitio'].'" class="btn2">
+                                                            <i class="fa fa-trash"></i> Eliminar
+                                                          </a>
+                                                        </li>
+                                                      </ul>
+                                                    </div>
+                                                  </td>
+                                                </tr>';
+                                                $i++;
+                                            }
+                                            ?>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="tab-pane" id="tab_2">
+                                <!-- SmartWizard html -->
+                                <div id="smartwizard" dir="rtl-">
+                                    <ul class="nav nav-progress">
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="#step-1">
+                                                <div class="num">1</div>
+                                                DNS o NIST
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="#step-2">
+                                                <span class="num">2</span>
+                                                UDP o TCP
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="#step-3">
+                                                <span class="num">3</span>
+                                                Dominio o Sub-dominio
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="#step-4">
+                                                <span class="num">4</span>
+                                                Nombre Dominio o Sub-dominio
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="#step-5">
+                                                <span class="num">5</span>
+                                                IP y Puerto
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link " href="#step-6">
+                                                <span class="num">6</span>
+                                                Certificado de seguridad
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link " href="#step-7">
+                                                <span class="num">7</span>
+                                                Ip Access List
+                                            </a>
+                                        </li>
+                                    </ul>
+
+                                    <div class="tab-content">
+                                        <div id="step-1" class="tab-pane" role="tabpanel" aria-labelledby="step-1">
+                                            <form id="form-1" method="POST" class="row row-cols-1 ms-5 me-5 needs-validation" novalidate>
+                                                <div class="col-xs-12">
+                                                    <div class="col-md-12">
+                                                        <div class="form-group col-md-12 text-center">
+                                                            <h5>DNS o NIST</h5>
+                                                            <div class="radio">
+                                                                <label>
+                                                                    <input required type="radio" name="optionsTipoTemplate" id="optionsTipoTemplate1" value="dns">
+                                                                    <span style="font-size: 13px;">
+                                                                        DNS
+                                                                    </span>
+                                                                </label>
+                                                                <label>
+                                                                    <input required type="radio" name="optionsTipoTemplate" id="optionsTipoTemplate2" value="nist">
+                                                                    <span style="font-size: 13px;">
+                                                                        NIST
+                                                                    </span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+
+                                        <div id="step-2" class="tab-pane" role="tabpanel" aria-labelledby="step-2">
+                                            <form id="form-2" method="POST" class="row row-cols-1 ms-5 me-5 needs-validation" novalidate>
+                                                <div class="col-xs-12">
+                                                    <div class="col-md-12">
+                                                        <div class="form-group col-md-12 text-center">
+                                                            <h5>UDP o TCP</h5>
+                                                            <div class="radio">
+                                                                <label>
+                                                                    <input required type="radio" name="optionsProtocolo" id="optionsProtocolo1" value="udp">
+                                                                    <span style="font-size: 13px;">
+                                                                        UDP
+                                                                    </span>
+                                                                </label>
+                                                                <label>
+                                                                    <input required type="radio" name="optionsProtocolo" id="optionsProtocolo2" value="tcp">
+                                                                    <span style="font-size: 13px;">
+                                                                        TCP
+                                                                    </span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+
+                                        <div id="step-3" class="tab-pane" role="tabpanel" aria-labelledby="step-3">
+                                            <form id="form-3" method="POST" class="row row-cols-1 ms-5 me-5 needs-validation" novalidate>
+                                                <div class="col-xs-12">
+                                                    <div class="col-md-12">
+                                                        <div class="form-group col-md-12 text-center">
+                                                            <h5>Dominio o Sub-dominio</h5>
+                                                            <div class="radio">
+                                                                <label>
+                                                                    <input required type="radio" name="optionsDominio" id="optionsRadios1" value="dominio">
+                                                                    <span style="font-size: 13px;">
+                                                                        Dominio
+                                                                    </span>
+                                                                </label>
+                                                                <label>
+                                                                    <input required type="radio" name="optionsDominio" id="optionsRadios2" value="subDominio">
+                                                                    <span style="font-size: 13px;">
+                                                                        Sub-dominio
+                                                                    </span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+
+                                        <div id="step-4" class="tab-pane" role="tabpanel" aria-labelledby="step-4">
+                                            <form id="form-4" method="POST" class="row row-cols-1 ms-5 me-5 needs-validation" novalidate>
+                                                <div class="col-xs-12">
+                                                    <div class="col-md-12">
+                                                        <h3></h3>
+
+                                                        <div class="form-group col-md-12 text-center">
+                                                            <h5>Nombre Dominio o Sub-dominio</h5>
+                                                            <div class="form-group col-md-4"></div>
+                                                            <div class="form-group col-md-4">
+                                                                <div class="input-group">
+                                                                    <div class="input-group-addon">
+                                                                        <img src="img/domain_5448.png" style="width: 20px;"/>
+                                                                    </div>
+                                                                    <input required type="text" class="form-control" name="nombre" placeholder="your-site.com">
+                                                                </div>
+                                                            </div>
+                                                            <div class="form-group col-md-4"></div>
+                                                        </div>
+
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+
+                                        <div id="step-5" class="tab-pane" role="tabpanel" aria-labelledby="step-5">
+                                            <form id="form-5" method="POST" class="row row-cols-1 ms-5 me-5 needs-validation" novalidate>
+                                                <div class="col-xs-12">
+                                                    <div class="col-md-12">
+                                                        <h3></h3>
+
+                                                        <div class="form-group col-md-12 text-center">
+                                                            <h5>IP y Puerto</h5>
+                                                            
+                                                            <button id="addRow" type="button" class="btn btn-primary" style="margin: 10px;">Agregar</button>
+
+                                                            <div class="inputFormRow col-md-12">
+                                                                <div class="form-group col-md-4">
+                                                                    <div class="input-group">
+                                                                        <div class="input-group-addon">
+                                                                            <i class="fa fa-server"></i>
+                                                                        </div>
+                                                                        <input required type="text" class="form-control" name="ip[]" placeholder="10.227.167.242">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="form-group col-md-4">
+                                                                    <div class="input-group">
+                                                                        <div class="input-group-addon">
+                                                                            <i class="fa fa-server"></i>
+                                                                        </div>
+                                                                        <input required type="text" class="form-control" name="puerto[]" placeholder="8080">
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="col-md-4"> 
+                                                                    <button id="removeRow" type="button" class="btn btn-danger">Borrar</button>
+                                                                </div>
+                                                            </div>
+
+                                                            <div id="newRow"></div>
+
+                                                        </div>
+
+                                                        <div class="form-group col-md-12 text-center">
+                                                            <h5>https:// ó http://</h5>
+                                                            <div class="radio">
+                                                                <label>
+                                                                    <input required type="radio" name="optionshttp" id="optionsRadioss1" value="https://">
+                                                                    <span style="font-size: 13px;">
+                                                                        https
+                                                                    </span>
+                                                                </label>
+                                                                <label>
+                                                                    <input required type="radio" name="optionshttp" id="optionsRadioss2" value="http://">
+                                                                    <span style="font-size: 13px;">
+                                                                        http
+                                                                    </span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+
+                                                    </div>
+                                                </div>
+                                            </form>  
+                                        </div>
+                                            
+                                        <div id="step-6" class="tab-pane" role="tabpanel" aria-labelledby="step-6">
+                                            <form id="form-6" method="POST" class="row row-cols-1 ms-5 me-5 needs-validation" novalidate>
+                                                <div class="col-xs-12">
+                                                    <div class="col-md-12">
+                                                        <h3></h3>
+
+                                                        <div class="form-group col-md-12 text-center">
+                                                            <h5>Certificado de seguridad</h5>
+                                                            <div class="radio">
+                                                                <label>
+                                                                    <input required type="radio" name="optionsCertificado" id="optionsRadio1" value="letsencript">
+                                                                    <span style="font-size: 13px;">
+                                                                        letsencript
+                                                                    </span>
+                                                                </label>
+                                                                <label>
+                                                                    <input required type="radio" name="optionsCertificado" id="optionsRadio2" value="Otro">
+                                                                    <span style="font-size: 13px;">
+                                                                        Otro
+                                                                    </span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="form-group col-md-12 text-center">
+                                                            <div class="form-group">
+                                                                <label class="switch-checkbox-blue" >
+                                                                    <input value="1" name="checkuno" type="checkbox"><span> proteccion DDOS</span>
+                                                                </label>
+
+                                                                <label class="switch-checkbox-blue" >
+                                                                    <input value="2" name="checkdos" type="checkbox"><span> proteccion BOTS</span>
+                                                                </label>
+
+                                                                <label class="switch-checkbox-blue" >
+                                                                    <input value="1" name="checkgeo" type="checkbox"><span> Geo Ip</span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="form-group col-md-12 text-center">
+                                                            <div class="col-md-4"></div>
+                                                            <div class="col-md-4">
+                                                                <label>Fecha de expiración:</label>
+                                                                <div class="input-group date">
+                                                                <div class="input-group-addon">
+                                                                    <i class="fa fa-calendar"></i>
+                                                                </div>
+                                                                <input name="fecha_expiracion" type="text" class="form-control pull-right" id="datepicker">
+                                                                </div>
+                                                                <!-- /.input group -->
+                                                            </div>
+                                                        </div>
+                                                        
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+
+                                        <div id="step-7" class="tab-pane" role="tabpanel">
+                                            <form id="form-7" method="POST" class="row needs-validation" novalidate>
+                                                <div class="col-xs-12">
+                                                    <div class="col-md-12">
+
+                                                        <div class="form-group col-md-12 text-center">
+                                                            <h5>IP</h5>
+                                                            
+                                                            <button id="addRowDos" type="button" class="btn btn-primary" style="margin: 10px;">Agregar</button>
+
+                                                            <div class="inputFormRowDos col-md-12">
+                                                                <div class="form-group col-md-6">
+                                                                    <div class="input-group">
+                                                                        <div class="input-group-addon">
+                                                                            <i class="fa fa-server"></i>
+                                                                        </div>
+                                                                        <input type="text" class="form-control" name="ip_validas[]" placeholder="10.227.167.242">
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="col-md-6"> 
+                                                                    <button id="removeRow" type="button" class="btn btn-danger">Borrar</button>
+                                                                </div>
+                                                            </div>
+
+                                                            <div id="newRowDos"></div>
+
+                                                        </div>
+
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- /.content -->
+            </div>
+            <!-- /.content-wrapper -->
+
+            <!-- Modal procesar-->
+            <div class="modal fade" id="ModalNData" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">Subir Backup</h5>
+                        </div>
+                        <div class="modal-body">
+                            <div class="file_upload">
+                                <form action="file_upload_sitio.php" class="dropzone">
+                                    <div class="dz-message needsclick">
+                                        <strong>Arrastra archivos a cualquier lugar para subirlos.</strong><br /><br />
+                                        <span class="note needsclick">
+                                            <span class="glyphicon glyphicon-open" aria-hidden="true" style="font-size:60px;"></span>
+                                        </span>
+                                    </div>
+                                </form>		
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <div class="text-center col-md-12">
+                                <button class="btn btn-default" data-dismiss="modal" type="reset"><i class="fa fa-close"></i> Cancelar</button>
+                                <button class="btn btn-primary" type="button" id="btnProcesarBackup"><i class="fa fa-save"></i> Procesar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal editar usuario-->
+            <div class="modal fade" id="ModalESitio" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document" style="width: 900px;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">Editar Sitio</h5>
+                        </div>
+                        <div class="modal-body">
+                            <div id="content_dynamic_edit_sitio">
+
+                            </div>
+                        </div>
+                        <div class="modal-footer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal editar sitio-->
+            <div class="modal fade" id="modalUpdateSitio" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document" style="width: 900px;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">Datos sitio</h5>
+                        </div>
+                        <div class="modal-body">
+                            <div id="content_dynamic_sitio">
+                            </div>
+                        </div>
+                        <div class="modal-footer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="main-footer" style="background-image: url('img/Footer_waf-2022.png'); padding: 60px;border-top: 0px solid #d2d6de;background-color: #ecf0f5;border-top: 0px solid #d2d6de; background-color: #ecf0f5;background-size: cover; background-repeat: no-repeat;">
+                <div class="pull-right hidden-xs" style="margin-top: 20px;">
+                    <strong>
+                        <a style="color: #ffffff;" target="_blank" href="https://www.netsoluciones.com">
+                        <h5 style="margin-top: 2px;">Diseñado por Netsoluciones</h5>
+                        </a>
+                    </strong>
+                </div>
+            </footer>
+        </div>
+        <!-- ./wrapper -->
+        <!-- jQuery 3 -->
+        <script src="assets/bower_components/jquery/dist/jquery.min.js"></script>
+        <!-- Bootstrap 3.3.7 -->
+        <script src="assets/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+        <!-- DataTables -->
+        <script src="assets/bower_components/datatables.net/js/jquery.dataTables.min.js"></script>
+        <script src="assets/bower_components/datatables.net-bs/js/dataTables.bootstrap.min.js"></script>
+        <!-- SlimScroll -->
+        <script src="assets/bower_components/jquery-slimscroll/jquery.slimscroll.min.js"></script>
+        <!-- FastClick -->
+        <script src="assets/bower_components/fastclick/lib/fastclick.js"></script>
+        <!-- AdminLTE App -->
+        <script src="assets/dist/js/adminlte.min.js"></script>
+        <!-- AdminLTE for demo purposes -->
+        <script src="assets/dist/js/demo.js"></script>
+        <!-- Select2 -->
+        <script src="assets/bower_components/select2/dist/js/select2.full.min.js"></script>
+        <!-- InputMask -->
+        <script src="assets/bower_components/input-mask/jquery.inputmask.js"></script>
+        <script src="assets/bower_components/input-mask/jquery.inputmask.date.extensions.js"></script>
+        <script src="assets/bower_components/input-mask/jquery.inputmask.extensions.js"></script>
+        <!-- PACE -->
+        <script src="assets/bower_components/PACE/pace.min.js"></script>
+
+        <!-- bootstrap datepicker -->
+        <script src="assets/bower_components/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+
+        <!-- Bootstrap WYSIHTML5 -->
+        <!-- <script src="assets/bower_components/bootstrap-wysihtml5/bootstrap3-wysihtml5.all.min.js"></script> -->
+        
+        <!-- Include SmartWizard JavaScript source -->
+        <script type="text/javascript" src="js/jquery.smartWizard.min.js"></script>
+
+        <script type="text/javascript" src="js/demo.js"></script>
+
+        <!-- Skrollr -->
+        <script type="text/javascript" src="assets/widgets/skrollr/skrollr.js"></script>
+
+        <!-- HG sticky -->
+        <script type="text/javascript" src="assets/widgets/sticky/sticky.js"></script>
+
+        <!-- WOW -->
+        <script type="text/javascript" src="assets/widgets/wow/wow.js"></script>
+
+        <!-- Theme layout -->
+        <script type="text/javascript" src="assets/themes/frontend/layout.js"></script>
+        
+        <script type="text/javascript">
+            // $(document).ajaxStart(function () {
+           //      Pace.restart()
+           // });
+
+            //Date picker
+            $('#datepicker').datepicker({
+                autoclose: true,
+                format: 'dd/mm/yyyy',
+                startDate: '+7d',
+            });
+        </script>
+
+        <!-- llamar comando -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                $(document).on('click', '#btnCambios', function(e){
+                    e.preventDefault();
+                    $.ajax({
+                        type: 'POST',
+                        url: 'controller/procesar_cambios.php',
+                        data: { dato: 'aplicar' },
+                        success: function (result) {
+                            //alert(result);
+                            not6();
+                            setTimeout("location.href = 'loadBalancer_tcpudp.php'",3000);
+                        }
+                    }); 
+                });
+            });
+        </script>
+
+        <!-- actualizar dato de sitio -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                //primer paso
+                $(document).on('click', '.btn4', function(e){
+                    e.preventDefault();
+                    var id_sitio = $(this).data('id');
+                    $('#modalUpdateSitio').modal('show');
+                    $('#content_dynamic_sitio').html('');
+                    $.ajax({
+                        url: 'controller/get_sitio_update.php',
+                        type: 'POST',
+                        data: 'id_sitio='+id_sitio,
+                        dataType: 'html'
+                    })
+                    .done(function(data){  
+                        $('#content_dynamic_sitio').html('');    
+                        $('#content_dynamic_sitio').html(data); // mostrar la data
+                    })
+                    .fail(function(){
+                        $('#content_dynamic_sitio').html('<i class="glyphicon glyphicon-info-sign"></i> Something went wrong, Please try again...');
+                    });
+                });
+
+                // segundo paso
+                $(document).on('click', '#btnUpdateSitio', function(e){
+                    e.preventDefault();
+                    $.ajax({
+                        type: 'POST',
+                        url: 'controller/update_sitio.php',
+                        data: $('.FormSitioUpdate').serialize(),
+                        success: function(data) {
+                            if (data == 'bien') {
+                                //alert(data);
+                                not3();
+                                setTimeout("location.href = 'loadBalancer_tcpudp.php'",3000);
+                            } else {
+                                //alert(data);
+                                not2();
+                            }
+                        }
+                    });      
+                });
+            });
+        </script>
+
+        <!-- actualizar datos -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                //respaldo
+                $('#update').click(function () {
+                    $.ajax({
+                      url: 'controller/ajax_backup_sitio.php', 
+                        success: function (result) {
+                            download('list_sitio.json', result);
+                            not6();
+                            setTimeout("location.href = 'loadBalancer_tcpudp.php'",3000);
+                        }
+                    })
+                });
+
+                function download(filename, result) {
+                    var element = document.createElement('a');
+                    element.setAttribute('href','data:text/plain;charset=utf-8, ' + encodeURIComponent(result));
+                    element.setAttribute('download', filename);
+                    document.body.appendChild(element);
+                    element.click();
+                    //document.body.removeChild(element);
+                }
+            });
+        </script>
+
+        <!-- procesar -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                //procesar archivo
+                $(document).on('click', '#btnProcesarBackup', function(e){
+                    e.preventDefault();
+                    $.ajax({
+                        url: 'controller/ajax_procesar_backupSitio.php',
+                        success: function (result) {
+                            //alert(result);
+                            not6();
+                            setTimeout("location.href = 'loadBalancer_tcpudp.php'",3000);
+                        }
+                    }); 
+                });
+            });
+        </script>  
+
+        <script type="text/javascript">
+            // agregar registro
+            $("#addRow").click(function () {
+                var html = '';
+                html += '<div class="col-md-12" id="inputFormRow">';
+                html += '<div class="form-group col-md-4">';
+                html += '<div class="input-group">';
+                html += '<div class="input-group-addon">';
+                html += '<i class="fa fa-server"></i>';
+                html += '</div>';
+                html += '<input required="required" type="text" class="form-control" name="ip[]" placeholder="10.227.167.242">';
+                html += '</div>';
+                html += '</div>';
+                html += '<div class="form-group col-md-4">';
+                html += '<div class="input-group">';
+                html += '<div class="input-group-addon">';
+                html += '<i class="fa fa-server"></i>';
+                html += '</div>';
+                html += '<input required="required" type="text" class="form-control" name="puerto[]" placeholder="8080">';
+                html += '</div>';
+                html += '</div>';
+                html += '<div class="col-md-4">';
+                html += '<button id="removeRow" type="button" class="btn btn-danger">Borrar</button>';
+                html += '</div>';
+                html += '</div>';
+
+                $('#newRow').append(html);
+                refreshWizardHeight();
+            });
+            // borrar registro
+            $(document).on('click', '#removeRow', function () {
+                $(this).closest('#inputFormRow').remove();
+                refreshWizardHeight();
+            });
+        </script>
+
+        <script>
+            $(document).ready(function () {
+              $('.sidebar-menu').tree();
+              $('#example1').DataTable();
+            })
+        </script>
+
+        <!-- Guardar -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                $(document).on('click', '.btnGsitio', function(e){
+                    e.preventDefault();
+                    var DataString = $('#form-1').serialize()+'&'+
+                              $('#form-2').serialize()+'&'+
+                              $('#form-3').serialize()+'&'+
+                              $('#form-4').serialize()+'&'+
+                              $('#form-5').serialize()+'&'+
+                              $('#form-6').serialize()+'&'+
+                              $('#form-7').serialize();
+
+                    $.ajax({
+                        type: 'POST',
+                        url: 'controller/g_load_balancer_udp.php',
+                        data: DataString,
+                        success: function(data) {
+                            switch (data) {
+                                case 'bien':
+                                    not1();
+                                    setTimeout("location.href = 'loadBalancer_tcpudp.php'",3000);
+                                    break;
+                                case 'mal':
+                                    not2();
+                                    break;
+                                case 'mal1':
+                                    not7();
+                                    break;
+                            }
+                        }
+                    });      
+                });
+            });
+        </script>
+
+        <!-- Delete -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                //Eliminar la usuario
+                $(document).on('click', '.btn2', function(e){
+                  e.preventDefault();
+                  var id_sitio = $(this).data('id');
+                  var parametro = {
+                    "id_sitio" : id_sitio
+                  }
+                  $.ajax({
+                    type: 'POST',
+                    url: 'controller/e_sitio_udp.php',
+                    data: parametro,
+                    success: function(data) {
+                      if (data == 'bien') {
+                          not4();
+                          setTimeout("location.href = 'loadBalancer_tcpudp.php'", 2000);
+                      } else{
+                        not5();
+                      }
+                    }
+                  });      
+                });
+            });
+        </script>
+
+        <!-- GET info -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                $(document).on('click', '.btn1', function(e){
+                    e.preventDefault();
+                    var id_sitio = $(this).data('id');
+                    $('#content_dynamic_edit_sitio').html('');  
+                    $.ajax({
+                        url: 'controller/get_sitio_udp_edit.php',
+                        type: 'POST',
+                        data: 'id_sitio='+id_sitio,
+                        dataType: 'html'
+                    })
+                    .done(function(data){  
+                        $('#content_dynamic_edit_sitio').html('');    
+                        $('#content_dynamic_edit_sitio').html(data); // mostrar la data
+                        //$('#ModalEP').modal('show');
+                    })
+                    .fail(function(){
+                        $('#content_dynamic_edit_sitio').html('<i class="glyphicon glyphicon-info-sign"></i> Something went wrong, Please try again...');
+                        //$('#ModalEP').modal('show');
+                    });
+                });
+            });
+        </script>
+
+        <!-- Update -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                $(document).on('click', '#btnASitio', function(e){
+                    e.preventDefault();
+                    $.ajax({
+                        type: 'POST',
+                        url: 'controller/a_sitio.php',
+                        data: $('.FormEditar').serialize(),
+                        success: function(data) {
+                            if (data == 'bien') {
+                                //alert(data);
+                                not3();
+                                setTimeout("location.href = 'loadBalancer_tcpudp.php'",3000);
+                            } else {
+                                //alert(data);
+                                not2();
+                            }
+                        }
+                    });      
+                });
+            });
+        </script>
+
+        <!-- activar geo ip -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                //Eliminar la usuario
+                $(document).on('click', '.btn3', function(e){
+                  e.preventDefault();
+                  var id_sitio = $(this).data('id');
+                  var parametro = {
+                    "id_sitio" : id_sitio
+                  }
+                  $.ajax({
+                    type: 'POST',
+                    url: 'controller/a_sitio_geo_ip.php',
+                    data: parametro,
+                    success: function(data) {
+                      if (data == 'bien') {
+                            not6();
+                            setTimeout("location.href = 'loadBalancer_tcpudp.php'", 2000);
+                      } else{
+                        not5();
+                      }
+                    }
+                  });      
+                });
+            });
+        </script>
+
+        <script type="text/javascript">
+            function refreshWizardHeight(stepIndex) {
+                const $wizard = $('#smartwizard');
+                const $container = $wizard.children('.tab-content');
+
+                const applyHeight = function() {
+                    const $step = typeof stepIndex === 'number'
+                        ? $container.children('#step-' + (stepIndex + 1))
+                        : $container.children('.tab-pane:visible');
+
+                    if ($step.length) {
+                        $container.stop(true, true).css('height', $step.outerHeight(true));
+                    }
+                };
+
+                if (window.requestAnimationFrame) {
+                    window.requestAnimationFrame(applyHeight);
+                } else {
+                    setTimeout(applyHeight, 0);
+                }
+            }
+
+            $(function() {
+                // Leave step event is used for validating the forms
+                $("#smartwizard").on("leaveStep", function(e, anchorObject, currentStepIdx, nextStepIdx, stepDirection) {
+                    // Validate only on forward movement  
+                    if (stepDirection == 'forward') {
+                    let form = document.getElementById('form-' + (currentStepIdx + 1));
+                    if (form) {
+                        if (!form.checkValidity()) {
+                        form.classList.add('was-validated');
+                        $('#smartwizard').smartWizard("setState", [currentStepIdx], 'error');
+                        refreshWizardHeight(currentStepIdx);
+                        return false;
+                        }
+                        $('#smartwizard').smartWizard("unsetState", [currentStepIdx], 'error');
+                    }
+                    }
+                });
+
+                // Step show event
+                $("#smartwizard").on("showStep", function(e, anchorObject, stepIndex, stepDirection, stepPosition) {
+                    $("#prev-btn").removeClass('disabled').prop('disabled', false);
+                    $("#next-btn").removeClass('disabled').prop('disabled', false);
+                    if(stepPosition === 'first') {
+                        $("#prev-btn").addClass('disabled').prop('disabled', true);
+                    } else if(stepPosition === 'last') {
+                        $("#next-btn").addClass('disabled').prop('disabled', true);
+                    } else {
+                        $("#prev-btn").removeClass('disabled').prop('disabled', false);
+                        $("#next-btn").removeClass('disabled').prop('disabled', false);
+                    }
+
+                    // Get step info from Smart Wizard
+                    let stepInfo = $('#smartwizard').smartWizard("getStepInfo");
+                    $("#sw-current-step").text(stepInfo.currentStep + 1);
+                    $("#sw-total-step").text(stepInfo.totalSteps);
+
+                    if (stepIndex >= 5) {
+                    refreshWizardHeight(stepIndex);
+                    $("#btnFinish").prop('disabled', false);
+                    } else {
+                    $("#btnFinish").prop('disabled', true);
+                    }
+
+                    // Focus first name
+                    if (stepIndex == 1) {
+                    setTimeout(() => {
+                        $('#first-name').focus();
+                    }, 0);
+                    }
+                });
+
+                // Smart Wizard
+                $('#smartwizard').smartWizard({
+                    selected: 0,
+                    // autoAdjustHeight: false,
+                    theme: 'arrows', // basic, arrows, square, round, dots
+                    transition: {
+                    animation:'none'
+                    },
+                    toolbar: {
+                    showNextButton: true, // show/hide a Next button
+                    showPreviousButton: true, // show/hide a Previous button
+                    position: 'bottom', // none/ top/ both bottom
+                    extraHtml: `<button class="btn btn-success btnGsitio" id="btnFinish" disabled>Guardar Datos</button>`
+                    },
+                    anchor: {
+                        enableNavigation: true, // Enable/Disable anchor navigation 
+                        enableNavigationAlways: false, // Activates all anchors clickable always
+                        enableDoneState: true, // Add done state on visited steps
+                        markPreviousStepsAsDone: true, // When a step selected by url hash, all previous steps are marked done
+                        unDoneOnBackNavigation: true, // While navigate back, done state will be cleared
+                        enableDoneStateNavigation: true // Enable/Disable the done state navigation
+                    },
+                });
+
+                $("#state_selector").on("change", function() {
+                    $('#smartwizard').smartWizard("setState", [$('#step_to_style').val()], $(this).val(), !$('#is_reset').prop("checked"));
+                    return true;
+                });
+
+                $("#style_selector").on("change", function() {
+                    $('#smartwizard').smartWizard("setStyle", [$('#step_to_style').val()], $(this).val(), !$('#is_reset').prop("checked"));
+                    return true;
+                });
+
+            });
+        </script>
+
+        <script type="text/javascript">
+            // agregar registro
+            $("#addRowDos").click(function () {
+                var html = '';
+                html += '<div class="col-md-12" id="inputFormRowDos">';
+                html += '<div class="form-group col-md-6">';
+                html += '<div class="input-group">';
+                html += '<div class="input-group-addon">';
+                html += '<i class="fa fa-server"></i>';
+                html += '</div>';
+                html += '<input type="text" class="form-control" name="ip_validas[]" placeholder="10.227.167.242">';
+                html += '</div>';
+                html += '</div>';
+                html += '<div class="col-md-6">';
+                html += '<button id="removeRowDos" type="button" class="btn btn-danger">Borrar</button>';
+                html += '</div>';
+                html += '</div>';
+
+                $('#newRowDos').append(html);
+                refreshWizardHeight();
+            });
+            // borrar registro
+            $(document).on('click', '#removeRowDos', function () {
+                $(this).closest('#inputFormRowDos').remove();
+                refreshWizardHeight();
+            });
+        </script>
+
+    </body>
+</html>

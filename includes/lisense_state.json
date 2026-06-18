@@ -1,0 +1,13 @@
+{
+    "active": true,
+    "activation_key": "NFW-7K9Q2M4XA1",
+    "model": "NETF-10GBPS-700",
+    "status": "Active - Cluster",
+    "activated_at": "2026-04-13",
+    "expires_at": "2027-04-19",
+    "type": "Cluster",
+    "days_total": 372,
+    "cleanup_executed": false,
+    "cleanup_at": "",
+    "cleanup_error": ""
+}

@@ -1,0 +1,15 @@
+
+-------------------------------------------------------------------------------
+
+/var/www/reportwui/eicar.com.txt: Win.Test.EICAR_HDB-1 FOUND
+/var/www/reportwui/eicar.com.txt: Removed.
+
+----------- SCAN SUMMARY -----------
+Known viruses: 6762867
+Engine version: 0.102.2
+Scanned directories: 852
+Scanned files: 8046
+Infected files: 1
+Data scanned: 208.32 MB
+Data read: 144.17 MB (ratio 1.44:1)
+Time: 110.598 sec (1 m 50 s)

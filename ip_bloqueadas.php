@@ -1,0 +1,1170 @@
+<?php
+    include_once 'includes/config.php';
+    include_once 'includes/security.php';
+    include_once 'geoIp/geoiploc.php';
+
+    date_default_timezone_set('America/Managua');
+    
+    session_start();
+    $id = $_SESSION['id_u'];
+    $nombre = $_SESSION['nombre'];
+    $apellido = $_SESSION['apellido'];
+    $activo = $_SESSION['activo'];
+    
+    /*optener solo el primer nombre y el primer apellido del profesor*/
+    $nombre = explode(' ', $nombre);
+    @$nombre = $nombre[0];
+    
+    $apellido = explode(' ', $apellido);
+    @$apellido = $apellido[0];
+
+    //se optiene el nombre del tipo de ataque
+    $tipo_ataque = $_GET['tipo!'];
+    $rango = $_GET['rango!'];
+
+
+    $actual = "";
+    $pasado = "";
+
+    switch ($rango) {
+        case 'HOY':
+            $actual = date("Y-m-d H:i:s");
+            $pasadoAux = date("Y-m-d");
+            $pasado = $pasadoAux.' 00:00:00';
+            break;
+        case 'SEMANA':
+            $actual = date("Y-m-d H:i:s");
+            $pasado = date("Y-m-d H:i:s",strtotime($actual."- 1 week"));
+            break;
+        case 'MES':
+            $actual = date("Y-m-d H:i:s");
+            $pasado = date("Y-m-d H:i:s",strtotime($actual."- 1 month"));
+            break;
+        default:
+            $actual = date("Y-m-d H:i:s");
+            $pasadoAux = date("Y-m-d");
+            $pasado = $pasadoAux.' 00:00:00';
+            break;
+    }
+    
+    $consult = mysqli_query($link,"SELECT * FROM usuario WHERE id_usuario = '$id'");
+    $row = mysqli_fetch_array($consult);
+    
+    if (empty($id) || empty($activo)) {
+        header("Location: index.php");
+    }
+    ?>
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Bloqueo IP</title>
+        <!-- Favicons -->
+        <link rel="shortcut icon" href="img/logo_icono.png">
+        <!-- Tell the browser to be responsive to screen width -->
+        <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+        <!-- Bootstrap 3.3.7 -->
+        <link rel="stylesheet" href="assets/bower_components/bootstrap/dist/css/bootstrap.min.css">
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="assets/bower_components/font-awesome/css/font-awesome.min.css">
+        <!-- Ionicons -->
+        <link rel="stylesheet" href="assets/bower_components/Ionicons/css/ionicons.min.css">
+        <!-- daterange picker -->
+        <link rel="stylesheet" href="assets/bower_components/bootstrap-daterangepicker/daterangepicker.css">
+        <!-- Theme style -->
+        <link rel="stylesheet" href="assets/dist/css/AdminLTE.min.css">
+        <!-- AdminLTE Skins. Choose a skin from the css/skins
+            folder instead of downloading all of them to reduce the load. -->
+        <link rel="stylesheet" href="assets/dist/css/skins/_all-skins.min.css">
+        <!-- Pace style -->
+        <link rel="stylesheet" href="assets/plugins/pace/pace.min.css">
+        <!-- bootstrap wysihtml5 - text editor -->
+        <link rel="stylesheet" href="assets/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css">
+        <!-- Select2 -->
+        <link rel="stylesheet" href="assets/bower_components/select2/dist/css/select2.min.css">
+        <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+        <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+        <![endif]-->
+        <!-- Google Font -->
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
+        <!-- DataTables -->
+        <link rel="stylesheet" href="assets/bower_components/datatables.net-bs/css/dataTables.bootstrap.min.css">
+        <link rel="stylesheet" href="css/cerulean/bootstrap.css" media="screen">
+        <script type="text/javascript" src="js/notifIt.js"></script>
+        <link rel="stylesheet" type="text/css" href="css/notifIt.css">
+        <link rel="stylesheet" type="text/css" href="css/c3.css">
+        <!-- <link rel="stylesheet" type="text/css" href="css/default/default.css"> -->
+        <link href="css/flags16-both.css" rel="stylesheet" type="text/css">
+        <link href="css/flags32-both.css" rel="stylesheet" type="text/css">
+
+        <!-- Morris chart -->
+        <link rel="stylesheet" href="assets/bower_components/morris.js/morris.css">
+
+        <link rel="stylesheet" type="text/css" href="assets/helpers/boilerplate.css">
+        <link rel="stylesheet" type="text/css" href="assets/helpers/grid.css">
+        <link rel="stylesheet" type="text/css" href="assets/helpers/utils.css">
+        <!-- ICONS -->
+        <link rel="stylesheet" type="text/css" href="assets/icons/fontawesome/fontawesome.css">
+        <!-- SNIPPETS -->
+        <link rel="stylesheet" type="text/css" href="assets/snippets/user-profile.css">
+        <link rel="stylesheet" type="text/css" href="assets/snippets/mobile-navigation.css">
+        <!-- Frontend theme -->
+        <link rel="stylesheet" type="text/css" href="assets/themes/frontend/layout.css">
+        <!-- <link rel="stylesheet" type="text/css" href="assets/themes/frontend/color-schemes/default.css"> -->
+        <!-- Components theme -->
+        <link rel="stylesheet" type="text/css" href="assets/themes/components/default.css">
+        <!-- Frontend responsive -->
+        <link rel="stylesheet" type="text/css" href="assets/helpers/frontend-responsive.css">
+        
+        <script>
+            function not1(){
+                notif({
+                    msg: "Se guardo correctamente",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+
+        <script>
+            function not2(){
+                notif({
+                    msg: "Algunos campos estan vacios",
+                    type: "error",
+                    position: "center"
+                });
+            }
+        </script>
+        
+        <script>
+            function not3(){
+                notif({
+                    msg: "Los datos se actualizarón correctamente",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+
+        <script>
+            function not4(){
+                notif({
+                    msg: "Se elimino correctamente",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+
+        <script>
+            function not5(){
+                notif({
+                    msg: "Error! algo salio mal",
+                    type: "error",
+                    position: "center"
+                });
+            }
+        </script>
+
+        <script>
+            function not6(){
+                notif({
+                    msg: "Datos actualizados!!",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+
+        <script>
+            function not7(){
+                notif({
+                    msg: "archivo actualizado!!",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+
+        <style type="text/css">
+            .skin-blue .main-header .navbar{
+                background-image: url('img/Heater_waf-2022.png');
+            }
+        </style>
+
+        <style type="text/css">
+            .flag.deprecated { color: silver; }
+            .flag.island { color: navy; }
+
+            .select2-container--default .select2-selection--single .select2-selection__rendered{
+                line-height: 24px;
+            }
+
+            .icono-relog{
+                float: left;
+                font-size: 1.4em;
+                padding: 0px 4px;
+                color: #212c4c;
+            }
+
+            .icono-bandera{
+                float: left;
+            }
+            
+            .estiloFila {
+                float:left;
+                display:inline;
+            }
+            
+            .dosColumnas li {
+                width: 50%;
+                display: block;
+            }
+
+            .tresColumnas li {
+                width:33.333%;
+            }
+
+            .cuatroColumnas li {
+                width:25%;
+            }
+
+            .cincoColumnas li {
+                width:16.666%;
+            }
+
+            .morris-hover-point{
+                color: #666 !important;
+            }
+
+            .progress{
+                margin-bottom: 0px !important;
+                width: 18em;
+            }
+
+            .small-box>.small-box-footer{
+                padding: 0px !important;
+            }
+
+            .small-box {
+                border-radius: 12px;
+            }
+
+            .bg-oscuro-gradient, .bg-teal-gradient {
+                background: -webkit-gradient(linear, left bottom, left top, color-stop(0, #ffffff), color-stop(1, #ffffff)) !important;
+                background-image: background: -webkit-linear-gradient(bottom, #141e30, #243b55) !important;
+                background-image: background: -o-linear-gradient(bottom, #141e30, #243b55) !important;
+                background-image: background: linear-gradient(to top, #141e30, #243b55) !important;
+                background: -moz-linear-gradient(center bottom, #141e30 0, #243b55 100%) !important;
+                background: -o-linear-gradient(#243b55, #141e30) !important;
+                filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#243b55', endColorstr='#141e30', GradientType=0) !important;
+                color: #fff;
+            }
+
+            #example2_filter {
+                display: none !important;
+            }
+
+            .nav-tabs-custom>.nav-tabs>li {
+                margin-bottom: 0px !important;
+                margin-right: 0px !important;
+            }
+
+            td.details-control {
+                background: url('img/details_open.png') no-repeat center center;
+                cursor: pointer;
+            }
+            tr.details td.details-control {
+                background: url('img/details_close.png') no-repeat center center;
+            }
+
+            #containerMapa {
+                height: 500px; 
+                width: 800px; 
+                margin: 0 auto; 
+            }
+
+            .highcharts-tooltip>span {
+                padding: 10px;
+                white-space: normal !important;
+                width: 200px;
+            }
+
+            .loading {
+                margin-top: 10em;
+                text-align: center;
+                color: gray;
+            }
+
+            .f32 .flag {
+                vertical-align: middle !important;
+            }
+
+            .main-header .header-logo {
+                background: url(img/logo_icono.png) left 50% no-repeat;
+            }
+
+        </style>
+
+        <style type="text/css">
+            .table {
+                color: #495057 !important;
+            }
+            /* Fonts weight */
+            .tabs-nav li a,
+            .main-header .header-nav > li > a,
+            .hero-heading,
+            .hero-text,
+            h1, h2, h3, h4, h5, h6,
+            .main-header .header-nav > li > a,
+            .hero-heading,
+            .hero-text {
+                font-family: "Raleway", "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-weight: 300;
+            }
+
+            /* Top bar menu */
+            .bg-topbar {
+                background: #fff;
+                border-bottom-color: #eee;
+            }
+            /* Main header */
+
+            .bg-header {
+                background: #fff;
+            }
+            .sticky-active .main-header {
+                box-shadow: 0 0 1px 2px rgba(0, 0, 0, 0.05);
+            }
+            /* Header subnav menu */
+
+            .main-header .header-nav > li > ul {
+                background: #253035;
+            }
+            .main-header .header-nav > li > ul li a:hover {
+                background: rgba(255,255,255,0.05);
+                color: #dce4e8;
+            }
+
+            .text-center2 {
+                text-align: center;
+            }
+        </style>
+
+        <link rel="stylesheet" type="text/css" href="//github.com/downloads/lafeber/world-flags-sprite/flags32.css">
+
+        <script src="js/jquery.min.js" type="text/javascript"></script>
+        <script src="js/php_file_tree_jquery.js" type="text/javascript"></script>
+    </head>
+    
+    <body class="hold-transition skin-blue layout-top-nav">
+        <!-- Site wrapper -->
+        <div class="wrapper">
+            <?php include 'includes/navbar.php'; ?>
+            <!-- =============================================== -->
+            <!-- Content Wrapper. Contains page content -->
+            <div class="content-wrapper">
+                <!-- Content Header (Page header) -->
+                <section class="content-header">
+                    <h1>
+                        <?php echo $tipo_ataque; ?>
+                    </h1>
+                </section>
+                <!-- Main content -->
+                <section class="content">
+                    <!-- Custom Tabs -->
+                    <div class="nav-tabs-custom">
+                        <ul class="nav nav-tabs">
+
+                            <li class="active">
+                                <a href="#tab_1" data-toggle="tab">
+                                <i class="fa fa-list"></i> Lista de bloqueos ip
+                                </a>
+                            </li>
+
+                        </ul>
+                        <div class="tab-content">
+
+                            <div class="tab-pane active" id="tab_1">
+                                <?php
+                                if($tipo_ataque === "Bloqueos Fuerza Bruta")
+                                {
+                                ?>
+                                <!-- grafica de ataques -->
+                                <div class="box box-solid bg-oscuro-gradient">
+                                    <div class="box-header">
+                                        <i class="fa fa-shield"></i>
+                                        <h3 class="box-title">Ataques de Fuerza Bruta</h3>
+                                    </div>
+                                    <div class="box-body border-radius-none" id="chartUno">
+                                        <div class="chart" id="line-chart" style="height: 200px;"></div>
+                                    </div>
+                                </div>
+                                <!-- /.box -->
+                                <table id="example1" class="table table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Tipo</th>
+                                            <th>Fecha de bloqueo</th>
+                                            <th>ip</th>
+                                            <th>Tipo de ataque</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    </tbody>
+                                </table>
+                                <?php
+                                } 
+                                else if($tipo_ataque === "Bloqueos Bots")
+                                {
+                                ?>
+                                <!-- grafica de ataques -->
+                                <div class="box box-solid bg-oscuro-gradient">
+                                    <div class="box-header">
+                                        <i class="fa fa-shield"></i>
+                                        <h3 class="box-title">Ataques Bots</h3>
+                                    </div>
+                                    <div class="box-body border-radius-none" id="chartUno">
+                                        <div class="chart" id="line-chart" style="height: 200px;"></div>
+                                    </div>
+                                </div>
+                                <!-- /.box -->
+                                <table id="example3" class="table table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Tipo</th>
+                                            <th>Fecha de bloqueo</th>
+                                            <th>ip</th>
+                                            <th>Tipo de ataque</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    </tbody>
+                                </table>
+                                <?php
+                                }
+                                else {?>
+                                <!-- grafica de ataques -->
+                                <div class="box box-solid bg-oscuro-gradient">
+
+                                    <div class="box-header">
+                                        <i class="fa fa-bolt"></i>
+                                        <h3 class="box-title">Ataques</h3>
+                                    </div>
+                                    <div class="box-body border-radius-none">
+                                        <div class="chart" id="line-chart2" style="height: 200px;"></div>
+                                    </div>
+                                </div>
+                                <!-- /.box -->
+                                <div style="overflow: auto;" class="box box-solid">
+                                    <div class="box-body no-padding">
+                                        <table id="example2" class="table table-bordered table-striped" width="100%">
+                                            <thead>
+                                                <tr>
+                                                    <th>Log</th>
+                                                    <th>Tipo</th>
+                                                    <th>Fecha de bloqueo</th>
+                                                    <th>Origen</th>
+                                                    <th>Host Destino</th>
+                                                    <th>Url</th>
+                                                    <th>Tipo de ataque</th>
+                                                    <th>Desbloquear</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="overlay" id="overlayListaWaf" style="display: none;">
+                                        <i class="fa fa-refresh fa-spin"></i>
+                                    </div>
+                                </div>
+                                <?php
+                                }
+                                ?>
+                            </div>
+
+                        </div>
+                        <!-- /.tab-content -->
+                    </div>
+                    <!-- nav-tabs-custom -->
+                </section>
+                <!-- /.content -->
+
+                <!-- Modal editar ip-->
+                <div class="modal fade" id="ModalDesbloquear" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="exampleModalLabel">Desbloquear IP</h5>
+                            </div>
+                            <div class="modal-body">
+                                <form id="Form2" class="FormUb" action="" method="" autocomplete="off">
+                                    <div class="form-group col-md-12">
+                                        <label>Dirección ip</label>
+                                        <input type="text" class="form-control" id="ip_edit" name="ip" placeholder="Dirección ip">
+                                    </div>
+                                    <div class="text-center col-md-12">
+                                        <button class="btn btn-default" data-dismiss="modal" type="reset"><i class="fa fa-close"></i> Cancelar</button>
+                                        <button class="btn btn-primary" type="button" id="btnDesbloqueo"><i class="fa fa-save"></i> Guardar</button>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.modal -->
+
+                <div class="modal fade" id="modalUrl">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span></button>
+                                <h5 class="modal-title">Url</h5>
+                            </div>
+                            <div class="modal-body" style="overflow: auto;">
+                                <p id="textoUrl"></p>
+                            </div>
+                            <div class="modal-footer">
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+
+            </div>
+            <!-- /.content-wrapper
+            style="padding: 0px;border-top: 0px solid #d2d6de;background: #ecf0f5;" -->
+            <footer class="main-footer" style="background-image: url('img/Footer_waf-2022.png'); padding: 60px;border-top: 0px solid #d2d6de;background-color: #ecf0f5;border-top: 0px solid #d2d6de; background-color: #ecf0f5;background-size: cover; background-repeat: no-repeat;">
+                <div class="pull-right hidden-xs" style="margin-top: 20px;">
+                    <strong>
+                        <a style="color: #ffffff;" target="_blank" href="https://www.netsoluciones.com">
+                        <h5 style="margin-top: 2px;">Diseñado por Netsoluciones</h5>
+                        </a>
+                    </strong>
+                </div>
+            </footer>
+        </div>
+        <!-- ./wrapper -->
+        <!-- jQuery 3 -->
+        <script src="assets/bower_components/jquery/dist/jquery.min.js"></script>
+        <!-- Bootstrap 3.3.7 -->
+        <script src="assets/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+        <!-- DataTables -->
+        <script src="assets/bower_components/datatables.net/js/jquery.dataTables.min.js"></script>
+        <script src="assets/bower_components/datatables.net-bs/js/dataTables.bootstrap.min.js"></script>
+        <!-- date-range-picker -->
+        <script src="assets/bower_components/moment/min/moment.min.js"></script>
+        <script src="assets/bower_components/bootstrap-daterangepicker/daterangepicker.js"></script>
+        <!-- bootstrap datepicker -->
+        <script src="assets/bower_components/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+        <!-- SlimScroll -->
+        <script src="assets/bower_components/jquery-slimscroll/jquery.slimscroll.min.js"></script>
+        <!-- FastClick -->
+        <script src="assets/bower_components/fastclick/lib/fastclick.js"></script>
+        <!-- AdminLTE App -->
+        <script src="assets/dist/js/adminlte.min.js"></script>
+        <!-- AdminLTE for demo purposes -->
+        <script src="assets/dist/js/demo.js"></script>
+        <!-- charts -->
+        <script src="js/d3.v5.min.js" charset="utf-8"></script>
+        <script src="js/c3.js"></script>
+        <!-- PACE -->
+        <script src="assets/bower_components/PACE/pace.min.js"></script>
+        <!-- ChartJS -->
+        <script src="js/Chart.min.js"></script>
+        <!-- Select2 -->
+        <script src="assets/bower_components/select2/dist/js/select2.full.min.js"></script>
+        <!-- ChartJS -->
+        <script src="assets/bower_components/chart.js/Chart.js"></script>
+        <!-- jQuery Knob Chart -->
+        <script src="assets/bower_components/jquery-knob/dist/jquery.knob.min.js"></script>
+        <!-- Morris.js charts -->
+        <script src="assets/bower_components/raphael/raphael.min.js"></script>
+        <script src="assets/bower_components/morris.js/morris.min.js"></script>
+
+        <!-- Skrollr -->
+        <script type="text/javascript" src="assets/widgets/skrollr/skrollr.js"></script>
+
+        <!-- HG sticky -->
+        <script type="text/javascript" src="assets/widgets/sticky/sticky.js"></script>
+
+        <!-- WOW -->
+        <script type="text/javascript" src="assets/widgets/wow/wow.js"></script>
+
+        <!-- Theme layout -->
+        <script type="text/javascript" src="assets/themes/frontend/layout.js"></script>
+        
+        <script type="text/javascript">
+            // $(document).ajaxStart(function () {
+           //      Pace.restart()
+           // });
+        </script>
+
+        <script>
+            $(document).ready(function () {
+              $('.sidebar-menu').tree()
+            });
+        </script>
+
+        <!-- table de ataques de fuerza bruta -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+
+                $('#example1').DataTable({
+                     "processing": true,
+                     "serverSide": true,
+                     "ajax": "ajax_table/ajax_table_ip.php?where!=<?php echo $rango; ?>",
+                     "createdRow": function ( row, data, index ) {
+
+                        //
+                        if (data[1]) {
+                            $('td', row).eq(1).addClass("text-center2");
+                        }
+
+                        //
+                        if (data[2]) {
+                            $('td', row).eq(2).append('<i class="fa fa-clock-o icono-relog"></i>');
+                        }
+
+                        //
+                        if (data[3]) {
+                            $('td', row).eq(3).append('<span class="f16"><i class="flag ac icono-bandera"></i></span>');
+                            //optener la bandera del pais
+                            var ip = data[3];
+                            var parametro = {
+                                "ip_bandera" : ip
+                            }
+                            $.ajax({
+                                url:  'controller/return_badera.php', 
+                                type: 'POST',
+                                data: parametro,
+                                dataType: 'html'
+                            })
+                            .done(function(result){
+                                $('td', row).eq(3).html('');
+                                $('td', row).eq(3).html(result+' '+data[3]);
+                            })
+                            .fail(function(){
+                                $('td', row).eq(3).append('<span class="f16"><i class="flag ac icono-bandera"></i></span>');
+                            });
+                        }
+
+                        //
+                        if (data[4]) {
+                            $('td', row).eq(4).html("Brute force attack ssh");
+                        }
+                    }
+                });
+
+                $('#example3').DataTable({
+                     "processing": true,
+                     "serverSide": true,
+                     "ajax": "ajax_table/ajax_table_bots.php?where!=<?php echo $rango; ?>",
+                     "createdRow": function ( row, data, index ) {
+
+                        // 
+                        if (data[1]) {
+                            $('td', row).eq(1).addClass("text-center2");
+                        }
+
+                        //
+                        if (data[2]) {
+                            $('td', row).eq(2).append('<i class="fa fa-clock-o icono-relog"></i>');
+                        }
+
+                        //
+                        if (data[3]) {
+                            $('td', row).eq(3).append('<span class="f16"><i class="flag ac icono-bandera"></i></span>');
+                            //optener la bandera del pais
+                            var ip = data[3];
+                            var parametro = {
+                                "ip_bandera" : ip
+                            }
+                            $.ajax({
+                                url:  'controller/return_badera.php', 
+                                type: 'POST',
+                                data: parametro,
+                                dataType: 'html'
+                            })
+                            .done(function(result){
+                                $('td', row).eq(3).html('');
+                                $('td', row).eq(3).html(result+' '+data[3]);
+                            })
+                            .fail(function(){
+                                $('td', row).eq(3).append('<span class="f16"><i class="flag ac icono-bandera"></i></span>');
+                            });
+                        }
+
+                        //
+                        if (data[4]) {
+                            $('td', row).eq(4).html("Ataque Bot");
+                        }
+                    }
+                });
+                  
+            });
+        </script>
+
+        <!-- table principal WAF-->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                $('#example2').DataTable({
+                     "processing": true,
+                     "serverSide": true,
+                     "ajax": "ajax_table/ajax_table_waf.php?where!=<?php echo $rango; ?>",
+                     "createdRow": function ( row, data, index ) {
+                        //
+                        if(data[0]){
+                            $('td', row).eq(0).addClass("details-control");
+                            $('td', row).eq(0).html('');
+                        }
+
+                        //
+                        if (data[1]) {
+                            $('td', row).eq(1).addClass('text-center2');
+                        }
+
+                        //
+                        if (data[3]) {
+                            $('td', row).eq(3).append('<span class="f16"><i class="flag ac icono-bandera"></i></span>');
+                            //optener la bandera del pais
+                            var ip = data[3];
+                            var parametro = {
+                                "ip_bandera" : ip
+                            }
+                            $.ajax({
+                                url:  'controller/return_badera.php', 
+                                type: 'POST',
+                                data: parametro,
+                                dataType: 'html'
+                            })
+                            .done(function(result){
+                                $('td', row).eq(3).html('');
+                                $('td', row).eq(3).html(result+' '+data[3]);
+                            })
+                            .fail(function(){
+                                $('td', row).eq(3).append('<span class="f16"><i class="flag ac icono-bandera"></i></span>');
+                            });
+                        }
+
+                        //
+                        if (data[4]) {
+                            $('td', row).eq(4).append('<i class="fa fa-server icono-relog"></i>');
+                        }
+
+                        //
+                        if (data[7]) {
+                            //saber si la ip esta bloqueada
+                            var ip = data[7];
+                            var parametro = {
+                                "ip_bloqueo" : ip
+                            }
+                            $.ajax({
+                                url:  'controller/return_boton.php', 
+                                type: 'POST',
+                                data: parametro,
+                                dataType: 'html'
+                            })
+                            .done(function(result){
+                                $('td', row).eq(7).html('');
+                                if(result > 0){
+                                    $('td', row).eq(7).html('<button class="btn btn-danger"><a href="#0" data-ip="'+result+'" style="color: #FFFFFF;" id="btnBloquearIp"><i class="fa fa-lock"></i> Bloquear IP</a></btutton>');
+                                } else {
+                                    $('td', row).eq(7).html('<button class="btn btn-primary"><a href="#0" data-toggle="modal" data-target="#ModalDesbloquear" data-ip="'+data[7]+'" style="color: #FFFFFF;" id="btnViewData"><i class="fa fa-unlock"></i> Desbloquear IP</a></btutton>');
+                                }
+                            })
+                            .fail(function(){
+                                $('td', row).eq(7).append('');
+                            });
+                        }
+
+                        //
+                        if (data[6]) {
+                            $('td', row).eq(6).html('');
+                            var ataque = data[6].toLowerCase();
+
+                            if (ataque == 'xss' || ataque == 'Cross Site Scripting') {
+                                $('td', row).eq(6).html('<a href="https://es.wikipedia.org/wiki/Cross-site_scripting" target="_black">'+data[6]+'</a>');
+                            } else if(ataque == 'sqli' || ataque == 'sql injections'){
+                                $('td', row).eq(6).html('<a href="https://es.wikipedia.org/wiki/Inyecci%C3%B3n_SQL" target="_black">'+data[6]+'</a>');
+                            } else if(ataque == 'directory traversal'){
+                                $('td', row).eq(6).html('<a href="https://en.wikipedia.org/wiki/Directory_traversal_attack" target="_black">'+data[6]+'</a>');
+                            } else if(ataque == 'internal rules'){
+                                $('td', row).eq(6).html('<a role="menuitem" tabindex="-1" href="#0" data-toggle="modal" data-target="#modalInfo">'+data[6]+'</a>');
+                            } else if(ataque == 'rfi'){
+                                $('td', row).eq(6).html('<a href="https://es.wikipedia.org/wiki/Remote_File_Inclusion" target="_black">'+data[6]+'</a>');
+                            } else {
+                                $('td', row).eq(6).html('<a href="#">'+data[6]+'</a>');
+                            }
+                        }
+
+                        //
+                        if (data[5]) {
+                            $('td', row).eq(5).html('');
+                            var url = data[5];
+                            var size = url.length;
+
+                            if (size <= 24) {
+                                $('td', row).eq(5).html(url);
+                            } else {
+                                $('td', row).eq(5).html('<a role="menuitem" tabindex="-1" href="#0" data-toggle="modal" data-target="#modalUrl" id="btnUrl" data-url="'+data[5]+'">Ver mas <i class="fa fa-plus"></i></a>');
+                            }
+                        }
+                    }
+                });
+
+                var table = $('#example2').DataTable();
+                $('#dropdown1').on('change',function(){
+                    table.columns(4).search(this.value).draw();
+                        //actualizar grafica
+                        var server_name = this.value;
+                        $('#line-chart2').html('');  
+                        var parametro = {
+                            "server_name" : server_name                        
+                        }
+                        $.ajax({
+                            url:  'controller/new_grafica_tres.php', 
+                            type: 'POST',
+                            data: parametro,
+                            dataType: 'html'
+                        })
+                        .done(function(data){  
+                            $('#line-chart2').html('');    
+                            $('#line-chart2').html(data); // mostrar la data
+                        })
+                        .fail(function(){
+                            $('#line-chart2').html('');
+                        });
+                });
+
+                function format (callback, d) {
+                    //return d[0];
+                    tbody = '';
+
+                    tbody += '<tr style="background: aliceblue;"><td>' + d[0] + '</td></tr>';
+                    tbody += '<tr style="text-align: center;"><td> <button class="btn btn-info"><a href="#0" data-id="'+d[1]+'" style="color: #FFFFFF;" id="btnWhiteList"><i class="fa fa-unlock"></i> Add Whitelist rules</a></btutton> </td></tr>';
+
+                    callback($('<table id="example" class="table table-bordered table-striped" width="100%">' + tbody + '</table>')).show();
+                }
+
+                // Array to track the ids of the details displayed rows
+                var detailRows = [];
+
+                $('#example2 tbody').on( 'click', 'tr td.details-control', function () {
+                    var tr = $(this).closest('tr');
+                    var row = table.row( tr );
+                    var idx = $.inArray( tr.attr('id'), detailRows );
+ 
+                    if ( row.child.isShown() ) {
+                        tr.removeClass( 'details' );
+                        row.child.hide();
+                     
+                        // Remove from the 'open' array
+                        detailRows.splice( idx, 1 );
+                    }
+                    else {
+                        format(row.child, row.data());
+                        tr.addClass( 'details' );
+
+                        // Add to the 'open' array
+                        if ( idx === -1 ) {
+                            detailRows.push( tr.attr('id') );
+                        }
+                    }
+                });
+
+
+                $(document).on('click', '#btnUrl', function(e){
+                    e.preventDefault();
+                    var url = $(this).data('url');
+                    //alert(url);
+                    $('#textoUrl').html('');
+                    $('#textoUrl').html(url);
+                });
+                  
+            });
+        </script>
+
+        <!-- opcions en tabla waf -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                //mostrar la info
+                $(document).on('click', '#btnViewData', function(e){
+                  e.preventDefault();
+                  var ip = $(this).data('ip');
+                  $('#ip_edit').val(ip);
+                });
+
+                // bloquear ip
+                $(document).on('click', '#btnBloquearIp', function(e){
+                    e.preventDefault();
+                    var id_ip = $(this).data('ip');
+                    //   alert(ip);
+                    $("#overlayListaWaf").css("display", "block");
+                    var parametro = {
+                        "id_ip" : id_ip
+                    }
+                    $.ajax({
+                        type: 'POST',
+                        url: 'controller/e_white_ip.php',
+                        data: parametro,
+                        success: function(data) {
+                        if (data == 'bien') {
+                            not4();
+                            $("#overlayListaWaf").css("display", "none");
+                            setTimeout("location.href = 'ip_bloqueadas.php?tipo!=<?php echo $tipo_ataque; ?>&rango!=<?php echo $rango; ?>'",2000);
+                        } else{
+                            not5();
+                            $("#overlayListaWaf").css("display", "none");
+                        }
+                        }
+                    }); 
+                });
+
+                // agregar a whitelist
+                $(document).on('click', '#btnWhiteList', function(e){
+                    e.preventDefault();
+                    var id_bloqueo = $(this).data('id');
+                    //alert(id_bloqueo);
+                    $("#overlayListaWaf").css("display", "block");
+                    var parametro = {
+                        "id_bloqueo" : id_bloqueo
+                    }
+                    $.ajax({
+                        type: 'POST',
+                        url: 'controller/g_whiteListBloqueo.php',
+                        data: parametro,
+                        success: function(data) {
+                            if (data == 'bien') {
+                                not4();
+                                $("#overlayListaWaf").css("display", "none");
+                                //alert(data);
+                                setTimeout("location.href = 'ip_bloqueadas.php?tipo!=<?php echo $tipo_ataque; ?>&rango!=<?php echo $rango; ?>'",2000);
+                            } else{
+                                //alert(data);
+                                not5();
+                                $("#overlayListaWaf").css("display", "none");
+                            }
+                        }
+                    }); 
+                });
+
+                //guardar la ip
+                $(document).on('click', '#btnDesbloqueo', function(e){
+                  e.preventDefault();
+                  $("#overlayListaWaf").css("display", "block");
+                  $.ajax({
+                    type: 'POST',
+                    url: 'controller/g_white_ip.php',
+                    data: $('.FormUb').serialize(),
+                    success: function(data) {
+                      if (data == 'bien') {
+                        not1();
+                        $("#overlayListaWaf").css("display", "none");
+                        setTimeout("location.href = 'ip_bloqueadas.php?tipo!=<?php echo $tipo_ataque; ?>&rango!=<?php echo $rango; ?>'",2000);
+                      }else{
+                        //alert(data);
+                        $("#overlayListaWaf").css("display", "none");
+                        not2();
+                      }
+                    }
+                  });      
+                });
+
+
+              });
+        </script>
+
+        <script src="js/highcharts.js"></script>
+        <script src="js/exporting.js"></script>
+        <script src="js/export-data.js"></script>
+
+        <?php
+        if($tipo_ataque === "Bloqueos Fuerza Bruta")
+        {
+        ?>
+        <!-- gradica de ip bloqueadas por fechas Uno-->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                var line = new Morris.Line({
+                    element          : 'line-chart',
+                    resize           : true,
+                    data             : [
+                    <?php
+                        if($rango == "HOY")
+                        {
+                            $consult = mysqli_query($link,"SELECT * FROM grafica_bloqueo_rango_ip 
+                                    WHERE grafica_bloqueo_rango_ip.rango_bloqueo_ip = 'HOY'");
+                            while($rows = mysqli_fetch_array($consult)){
+                                $fecha_bloqueo_actual = $rows['fecha_bloqueo_rango_ip'];
+                                $totalPorFecha = $rows['total_bloqueo_rango_ip'];
+                                echo '{ y: "'.$fecha_bloqueo_actual.'", item1: '.$totalPorFecha.'},';
+                            }
+                        } else if($rango == "SEMANA"){
+                            $consult = mysqli_query($link,"SELECT * FROM grafica_bloqueo_rango_ip 
+                                    WHERE grafica_bloqueo_rango_ip.rango_bloqueo_ip = 'SEMANA'");
+                            while($rows = mysqli_fetch_array($consult)){
+                                $fecha_bloqueo_actual = $rows['fecha_bloqueo_rango_ip'];
+                                $totalPorFecha = $rows['total_bloqueo_rango_ip'];
+                                echo '{ y: "'.$fecha_bloqueo_actual.'", item1: '.$totalPorFecha.'},';
+                            }
+                        } else if($rango == "MES"){
+                            $consult = mysqli_query($link,"SELECT * FROM grafica_bloqueo_rango_ip 
+                                    WHERE grafica_bloqueo_rango_ip.rango_bloqueo_ip = 'MES'");
+                            while($rows = mysqli_fetch_array($consult)){
+                                $fecha_bloqueo_actual = $rows['fecha_bloqueo_rango_ip'];
+                                $totalPorFecha = $rows['total_bloqueo_rango_ip'];
+                                echo '{ y: "'.$fecha_bloqueo_actual.'", item1: '.$totalPorFecha.'},';
+                            }
+                        }
+                    ?>
+                    ],
+                    xkey             : 'y',
+                    ykeys            : ['item1'],
+                    labels           : ['Total ip bloquedas'],
+                    lineColors       : ['#0a63a4'],
+                    lineWidth        : 2,
+                    hideHover        : 'auto',
+                    gridTextColor    : '#888888',
+                    gridStrokeWidth  : 0.4,
+                    pointSize        : 4,
+                    pointStrokeColors: ['#0a63a4'],
+                    gridLineColor    : '#888888',
+                    gridTextFamily   : 'Open Sans',
+                    gridTextSize     : 10
+                });
+            });
+        </script>
+        <?php
+        }
+        else if($tipo_ataque === "Bloqueos Bots")
+        {
+        ?>
+        <!-- gradica de ip bloqueadas por fechas Uno-->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                var line = new Morris.Line({
+                    element          : 'line-chart',
+                    resize           : true,
+                    data             : [
+                    <?php
+                        if($rango == "HOY")
+                        {
+                            $consult = mysqli_query($link,"SELECT * FROM grafica_bloqueo_bots 
+                                    WHERE grafica_bloqueo_bots.rango_bloqueo_bot = 'HOY'");
+                            while($rows = mysqli_fetch_array($consult)){
+                                $fecha_bloqueo_actual = $rows['fecha_bloqueo_rango_bot'];
+                                $totalPorFecha = $rows['total_bloqueo_rango_bot'];
+                                echo '{ y: "'.$fecha_bloqueo_actual.'", item1: '.$totalPorFecha.'},';
+                            }
+                        } else if($rango == "SEMANA"){
+                            $consult = mysqli_query($link,"SELECT * FROM grafica_bloqueo_bots 
+                                    WHERE grafica_bloqueo_bots.rango_bloqueo_bot = 'SEMANA'");
+                            while($rows = mysqli_fetch_array($consult)){
+                                $fecha_bloqueo_actual = $rows['fecha_bloqueo_rango_bot'];
+                                $totalPorFecha = $rows['total_bloqueo_rango_bot'];
+                                echo '{ y: "'.$fecha_bloqueo_actual.'", item1: '.$totalPorFecha.'},';
+                            }
+                        } else if($rango == "MES"){
+                            $consult = mysqli_query($link,"SELECT * FROM grafica_bloqueo_bots 
+                                    WHERE grafica_bloqueo_bots.rango_bloqueo_bot = 'MES'");
+                            while($rows = mysqli_fetch_array($consult)){
+                                $fecha_bloqueo_actual = $rows['fecha_bloqueo_rango_bot'];
+                                $totalPorFecha = $rows['total_bloqueo_rango_bot'];
+                                echo '{ y: "'.$fecha_bloqueo_actual.'", item1: '.$totalPorFecha.'},';
+                            }
+                        }
+                    ?>
+                    ],
+                    xkey             : 'y',
+                    ykeys            : ['item1'],
+                    labels           : ['Total ip bloquedas'],
+                    lineColors       : ['#0a63a4'],
+                    lineWidth        : 2,
+                    hideHover        : 'auto',
+                    gridTextColor    : '#888888',
+                    gridStrokeWidth  : 0.4,
+                    pointSize        : 4,
+                    pointStrokeColors: ['#0a63a4'],
+                    gridLineColor    : '#888888',
+                    gridTextFamily   : 'Open Sans',
+                    gridTextSize     : 10
+                });
+            });
+        </script>
+        ?>
+        <!-- gradica de ip bloqueadas por fechas Dos-->
+        <script type="text/javascript">
+        <?php
+        } else {?>
+        <!-- gradica de ip bloqueadas por fechas Dos-->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                // $(document).on('click', '#ataquesGrafica', function(e){
+                    //e.preventDefault();
+                    var line = new Morris.Line({
+                        element          : 'line-chart2',
+                        resize           : true,
+                        data             : [
+                         <?php
+                            if($rango == "HOY")
+                            {
+                                $consult = mysqli_query($link,"SELECT * FROM grafica_bloqueo_rango 
+                                        WHERE grafica_bloqueo_rango.rango_bloqueo = 'HOY'");
+                                while($rows = mysqli_fetch_array($consult)){
+                                    $fecha_bloqueo_actual = $rows['fecha_bloqueo_rango'];
+                                    $totalPorFecha = $rows['total_bloqueo_rango'];
+                                    echo '{ y: "'.$fecha_bloqueo_actual.'", item1: '.$totalPorFecha.'},';
+                                }
+                            } else if($rango == "SEMANA"){
+                                $consult = mysqli_query($link,"SELECT * FROM grafica_bloqueo_rango 
+                                        WHERE grafica_bloqueo_rango.rango_bloqueo = 'SEMANA'");
+                                while($rows = mysqli_fetch_array($consult)){
+                                    $fecha_bloqueo_actual = $rows['fecha_bloqueo_rango'];
+                                    $totalPorFecha = $rows['total_bloqueo_rango'];
+                                    echo '{ y: "'.$fecha_bloqueo_actual.'", item1: '.$totalPorFecha.'},';
+                                }
+                            } else if($rango == "MES"){
+                                $consult = mysqli_query($link,"SELECT * FROM grafica_bloqueo_rango 
+                                        WHERE grafica_bloqueo_rango.rango_bloqueo = 'MES'");
+                                while($rows = mysqli_fetch_array($consult)){
+                                    $fecha_bloqueo_actual = $rows['fecha_bloqueo_rango'];
+                                    $totalPorFecha = $rows['total_bloqueo_rango'];
+                                    echo '{ y: "'.$fecha_bloqueo_actual.'", item1: '.$totalPorFecha.'},';
+                                }
+                            }
+                        ?>
+                        ],
+                        xkey             : 'y',
+                        ykeys            : ['item1'],
+                        labels           : ['Total Ataques'],
+                        lineColors       : ['#0a63a4'],
+                        lineWidth        : 2,
+                        hideHover        : 'auto',
+                        gridTextColor    : "#888888",
+                        gridStrokeWidth  : 0.4,
+                        pointSize        : 4,
+                        pointStrokeColors: ['#0a63a4'],
+                        gridLineColor    : "#888888",
+                        gridTextFamily   : 'Open Sans',
+                        gridTextSize     : 10
+                    });
+                // });
+            });
+        </script>
+        <?php
+        }
+        ?>
+
+    </body>
+</html>

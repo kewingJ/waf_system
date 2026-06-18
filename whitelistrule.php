@@ -1,0 +1,484 @@
+<?php
+    include_once 'includes/config.php';
+    include_once 'includes/security.php';
+    include_once 'geoIp/geoiploc.php';
+
+    date_default_timezone_set('America/Managua');
+    
+    session_start();
+    $id         = $_SESSION['id_u'];
+    $nombre     = $_SESSION['nombre'];
+    $apellido   = $_SESSION['apellido'];
+    $activo     = $_SESSION['activo'];
+    $tipo       = $_SESSION['tipo_usuario'];
+    
+    /*optener solo el primer nombre y el primer apellido del profesor*/
+    $nombre = explode(' ', $nombre);
+    @$nombre = $nombre[0];
+    
+    $apellido = explode(' ', $apellido);
+    @$apellido = $apellido[0];
+    
+    $consult = mysqli_query($link,"SELECT * FROM usuario WHERE id_usuario = '$id'");
+    $row = mysqli_fetch_array($consult);
+    
+    if (empty($id) || empty($activo) || $tipo != 1) {
+        header("Location: index.php");
+    } else {
+        $fechaGuardada = $_SESSION["ultimoAcceso"];
+        $ahora = date("Y-n-j H:i:s");
+        $tiempo_transcurrido = (strtotime($ahora)-strtotime($fechaGuardada));
+        
+        //echo $tiempo_transcurrido;
+        //comparamos el tiempo transcurrido
+        if($tiempo_transcurrido >= 1200) {
+            //si pasaron 20 minutos o más
+            session_destroy(); // destruyo la sesión
+            session_start();
+            $_SESSION['nombre_usuario']     = $nombre;
+            $_SESSION['apellido_usuario']   = $apellido;
+            $_SESSION['correo_usuario']     = $row['email_u'];
+
+            header("Location: lockscreen.php"); //envío al usuario a la pag. de autenticación
+            //sino, actualizo la fecha de la sesión
+        } else {
+            $_SESSION["ultimoAcceso"] = $ahora;
+        }
+    }
+    ?>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>White List Rules</title>
+        <!-- Favicons -->
+        <link rel="shortcut icon" href="img/logo_icono.png">
+        <!-- Tell the browser to be responsive to screen width -->
+        <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+        <!-- Bootstrap 3.3.7 -->
+        <link rel="stylesheet" href="assets/bower_components/bootstrap/dist/css/bootstrap.min.css">
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="assets/bower_components/font-awesome/css/font-awesome.min.css">
+        <!-- Ionicons -->
+        <link rel="stylesheet" href="assets/bower_components/Ionicons/css/ionicons.min.css">
+        <!-- Theme style -->
+        <link rel="stylesheet" href="assets/dist/css/AdminLTE.min.css">
+        <!-- AdminLTE Skins. Choose a skin from the css/skins
+            folder instead of downloading all of them to reduce the load. -->
+        <link rel="stylesheet" href="assets/dist/css/skins/_all-skins.min.css">
+
+        <!-- Select2 -->
+        <link rel="stylesheet" href="assets/bower_components/select2/dist/css/select2.min.css">
+
+        <!-- Pace style -->
+        <link rel="stylesheet" href="assets/plugins/pace/pace.min.css">
+        <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+        <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+        <![endif]-->
+        <!-- Google Font -->
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
+        
+        <link rel="stylesheet" href="css/cerulean/bootstrap.css" media="screen">
+
+        <!-- bootstrap wysihtml5 - text editor -->
+        <link rel="stylesheet" href="assets/bower_components/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css">
+
+        <!-- DataTables -->
+        <link rel="stylesheet" href="assets/bower_components/datatables.net-bs/css/dataTables.bootstrap.min.css">
+        <script type="text/javascript" src="js/notifIt.js"></script>
+        <link rel="stylesheet" type="text/css" href="css/notifIt.css">
+
+        <link rel="stylesheet" type="text/css" href="assets/helpers/boilerplate.css">
+        <link rel="stylesheet" type="text/css" href="assets/helpers/grid.css">
+        <link rel="stylesheet" type="text/css" href="assets/helpers/utils.css">
+        <!-- ICONS -->
+        <link rel="stylesheet" type="text/css" href="assets/icons/fontawesome/fontawesome.css">
+        <!-- SNIPPETS -->
+        <link rel="stylesheet" type="text/css" href="assets/snippets/user-profile.css">
+        <link rel="stylesheet" type="text/css" href="assets/snippets/mobile-navigation.css">
+        <!-- Frontend theme -->
+        <link rel="stylesheet" type="text/css" href="assets/themes/frontend/layout.css">
+        <!-- <link rel="stylesheet" type="text/css" href="assets/themes/frontend/color-schemes/default.css"> -->
+        <!-- Components theme -->
+        <link rel="stylesheet" type="text/css" href="assets/themes/components/default.css">
+        <!-- Frontend responsive -->
+        <link rel="stylesheet" type="text/css" href="assets/helpers/frontend-responsive.css">
+
+
+        <script>
+            function not1(){
+                notif({
+                    msg: "Se guardo correctamente",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+        <script>
+            function not2(){
+                notif({
+                    msg: "Algunos campos estan vacios",
+                    type: "error",
+                    position: "center"
+                });
+            }
+        </script>
+        <script>
+            function not3(){
+                notif({
+                    msg: "Los datos se actualizarón correctamente",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+        <script>
+            function not4(){
+                notif({
+                    msg: "Se elimino correctamente",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+        <script>
+            function not5(){
+                notif({
+                    msg: "Error! algo salio mal",
+                    type: "error",
+                    position: "center"
+                });
+            }
+        </script>
+
+        <style type="text/css">
+            .skin-blue .main-header .navbar{
+                background-image: url('img/Heater_waf-2022.png');
+            }
+
+            .select2-container--default .select2-selection--single{
+                border-radius: 0px !important;
+            }
+
+            .select2-container--default .select2-selection--single .select2-selection__rendered{
+                line-height: 22px !important;
+            }
+        </style>
+
+        <style type="text/css">
+            .stepwizard-step p {
+                margin-top: 10px;
+            }
+
+            .stepwizard-row {
+                display: table-row;
+            }
+
+            .stepwizard {
+                display: table;
+                width: 100%;
+                position: relative;
+            }
+
+            .stepwizard-step button[disabled] {
+                opacity: 1 !important;
+                filter: alpha(opacity=100) !important;
+            }
+
+            .stepwizard-row:before {
+                top: 14px;
+                bottom: 0;
+                position: absolute;
+                content: " ";
+                width: 100%;
+                height: 1px;
+                background-color: #ccc;
+                z-order: 0;
+
+            }
+
+            .stepwizard-step {
+                display: table-cell;
+                text-align: center;
+                position: relative;
+            }
+
+            .btn-circle {
+              width: 30px;
+              height: 30px;
+              text-align: center;
+              padding: 6px 0;
+              font-size: 12px;
+              line-height: 1.428571429;
+              border-radius: 15px;
+            }
+
+            .main-header .header-logo {
+                background: url(img/logo_icono.png) left 50% no-repeat;
+            }
+        </style>
+
+        <style type="text/css">
+            .table {
+                color: #495057 !important;
+            }
+            /* Fonts weight */
+            .tabs-nav li a,
+            .main-header .header-nav > li > a,
+            .hero-heading,
+            .hero-text,
+            h1, h2, h3, h4, h5, h6,
+            .main-header .header-nav > li > a,
+            .hero-heading,
+            .hero-text {
+                font-family: "Raleway", "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-weight: 300;
+            }
+
+            /* Top bar menu */
+            .bg-topbar {
+                background: #fff;
+                border-bottom-color: #eee;
+            }
+            /* Main header */
+
+            .bg-header {
+                background: #fff;
+            }
+            .sticky-active .main-header {
+                box-shadow: 0 0 1px 2px rgba(0, 0, 0, 0.05);
+            }
+            /* Header subnav menu */
+
+            .main-header .header-nav > li > ul {
+                background: #253035;
+            }
+            .main-header .header-nav > li > ul li a:hover {
+                background: rgba(255,255,255,0.05);
+                color: #dce4e8;
+            }
+        </style>
+    </head>
+    <body class="hold-transition skin-blue layout-top-nav">
+        <!-- Site wrapper -->
+        <div class="wrapper">
+            <?php include 'includes/navbar.php'; ?>
+            <!-- =============================================== -->
+            <!-- Content Wrapper. Contains page content -->
+            <div class="content-wrapper">
+                <!-- Content Header (Page header) -->
+                <section class="content-header">
+                    <h1>
+                        
+                    </h1>
+                    <ol class="breadcrumb">
+                    </ol>
+                </section>
+                <!-- Main content -->
+                <section class="content">
+                     <!-- Custom Tabs -->
+                    <div class="nav-tabs-custom">
+                        <ul class="nav nav-tabs">
+                            <li class="active">
+                                <a href="#tab_1" data-toggle="tab">
+                                <i class="fa fa-shield"></i> WhiteList
+                                </a>
+                            </li>
+                        </ul>
+                        <div class="tab-content">
+                            <div class="tab-pane active" id="tab_1">
+                                <table id="example1" class="table table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre Documento</th>
+                                            <th class="text-center">Editar</th>
+                                            <th class="text-center">Aplicar cambios</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>whitelist_rules</td>
+                                            <td class="text-center">
+                                                <a href="#0"
+                                                    data-toggle="modal"
+                                                    data-target="#ModalESitio" class="btn1 btn btn-primary">
+                                                        <i class="fa fa-pencil"></i> Editar
+                                                </a>
+                                            </td>
+                                            <td class="text-center">
+                                                <button id="aplicarCambios" type="button" class="btn btn-primary">
+                                                    <i class="fa fa-code"></i> Aplicar cambios
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- /.content -->
+            </div>
+            <!-- /.content-wrapper -->
+
+            <!-- Modal editar usuario-->
+            <div class="modal fade" id="ModalESitio" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document" style="width: 900px;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">Editar</h5>
+                        </div>
+                        <div class="modal-body">
+                            <div id="content_dynamic_edit_sitio">
+
+                            </div>
+                        </div>
+                        <div class="modal-footer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="main-footer" style="background-image: url('img/Footer_waf-2022.png'); padding: 60px;border-top: 0px solid #d2d6de;background-color: #ecf0f5;border-top: 0px solid #d2d6de; background-color: #ecf0f5;background-size: cover; background-repeat: no-repeat;">
+                <div class="pull-right hidden-xs" style="margin-top: 20px;">
+                    <strong>
+                        <a style="color: #ffffff;" target="_blank" href="https://www.netsoluciones.com">
+                        <h5 style="margin-top: 2px;">Diseñado por Netsoluciones</h5>
+                        </a>
+                    </strong>
+                </div>
+            </footer>
+        </div>
+        <!-- ./wrapper -->
+        <!-- jQuery 3 -->
+        <script src="assets/bower_components/jquery/dist/jquery.min.js"></script>
+        <!-- Bootstrap 3.3.7 -->
+        <script src="assets/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+        <!-- DataTables -->
+        <script src="assets/bower_components/datatables.net/js/jquery.dataTables.min.js"></script>
+        <script src="assets/bower_components/datatables.net-bs/js/dataTables.bootstrap.min.js"></script>
+        <!-- SlimScroll -->
+        <script src="assets/bower_components/jquery-slimscroll/jquery.slimscroll.min.js"></script>
+        <!-- FastClick -->
+        <script src="assets/bower_components/fastclick/lib/fastclick.js"></script>
+        <!-- AdminLTE App -->
+        <script src="assets/dist/js/adminlte.min.js"></script>
+        <!-- AdminLTE for demo purposes -->
+        <script src="assets/dist/js/demo.js"></script>
+        <!-- Select2 -->
+        <script src="assets/bower_components/select2/dist/js/select2.full.min.js"></script>
+        <!-- InputMask -->
+        <script src="assets/bower_components/input-mask/jquery.inputmask.js"></script>
+        <script src="assets/bower_components/input-mask/jquery.inputmask.date.extensions.js"></script>
+        <script src="assets/bower_components/input-mask/jquery.inputmask.extensions.js"></script>
+        <!-- PACE -->
+        <script src="assets/bower_components/PACE/pace.min.js"></script>
+        <!-- Bootstrap WYSIHTML5 -->
+        <script src="assets/bower_components/bootstrap-wysihtml5/bootstrap3-wysihtml5.all.min.js"></script>
+
+        <!-- Skrollr -->
+        <script type="text/javascript" src="assets/widgets/skrollr/skrollr.js"></script>
+
+        <!-- HG sticky -->
+        <script type="text/javascript" src="assets/widgets/sticky/sticky.js"></script>
+
+        <!-- WOW -->
+        <script type="text/javascript" src="assets/widgets/wow/wow.js"></script>
+
+        <!-- Theme layout -->
+        <script type="text/javascript" src="assets/themes/frontend/layout.js"></script>
+        
+        <script type="text/javascript">
+            // $(document).ajaxStart(function () {
+           //      Pace.restart()
+           // });
+        </script>
+
+        <script>
+            $(document).ready(function () {
+              $('.sidebar-menu').tree();
+              $('#example1').DataTable();
+            })
+        </script>
+
+        <!-- GET info -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                $(document).on('click', '.btn1', function(e){
+                    e.preventDefault();
+                    var id_sitio = 1;
+                    $('#content_dynamic_edit_sitio').html('');  
+                    $.ajax({
+                        url: 'controller/get_whitelist.php',
+                        type: 'POST',
+                        data: 'id_sitio='+id_sitio,
+                        dataType: 'html'
+                    })
+                    .done(function(data){  
+                        $('#content_dynamic_edit_sitio').html('');    
+                        $('#content_dynamic_edit_sitio').html(data); // mostrar la data
+                        //$('#ModalEP').modal('show');
+                    })
+                    .fail(function(){
+                        $('#content_dynamic_edit_sitio').html('<i class="glyphicon glyphicon-info-sign"></i> Something went wrong, Please try again...');
+                        //$('#ModalEP').modal('show');
+                    });
+                });
+
+                //ejecutar cambios
+                $(document).on('click', '#aplicarCambios', function(e){
+                    e.preventDefault();
+                    var dato = 'aplicar';
+                    var parametro = {
+                        "dato" : dato
+                    }
+                    //$("#overlayListaIP").css("display", "block");
+                    $.ajax({
+                        type: 'POST',
+                        url: 'controller/ajax_cambios.php',
+                        data: parametro,
+                        success: function(data) {
+                        if (data == 'bien') {
+                            not3();
+                            //$("#overlayListaIP").css("display", "none");
+                            setTimeout("location.href = 'whitelistrule.php'",3000);
+                        }else{
+                            //alert(data);
+                            //$("#overlayListaIP").css("display", "none");
+                            not2();
+                        }
+                        }
+                    });      
+                    });
+            });
+        </script>
+
+        <!-- Update -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                $(document).on('click', '#btnASitio', function(e){
+                    e.preventDefault();
+                    $.ajax({
+                        type: 'POST',
+                        url: 'controller/a_sitio.php',
+                        data: $('.FormEditar').serialize(),
+                        success: function(data) {
+                            if (data == 'bien') {
+                                //alert(data);
+                                not3();
+                                setTimeout("location.href = 'whitelistrule.php'",3000);
+                            } else {
+                                //alert(data);
+                                not2();
+                            }
+                        }
+                    });      
+                });
+            });
+        </script>
+
+    </body>
+</html>

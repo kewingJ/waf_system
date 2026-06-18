@@ -1,0 +1,2751 @@
+<?php
+    include_once 'includes/config.php';
+    include_once 'includes/security.php';
+    include_once 'geoIp/geoiploc.php';
+    
+    session_start();
+    $id = $_SESSION['id_u'];
+    $nombre = $_SESSION['nombre'];
+    $apellido = $_SESSION['apellido'];
+    $activo = $_SESSION['activo'];
+    $tipo = $_SESSION['tipo_usuario'];
+    
+    /*optener solo el primer nombre y el primer apellido del profesor*/
+    $nombre = explode(' ', $nombre);
+    @$nombre = $nombre[0];
+    
+    $apellido = explode(' ', $apellido);
+    @$apellido = $apellido[0];
+    
+    $consult = mysqli_query($link,"SELECT * FROM usuario
+                                INNER JOIN usuario_host
+                                ON usuario.id_usuario = usuario_host.id_usuario
+                                INNER JOIN host
+                                ON usuario_host.id_host = host.id_host
+                                WHERE usuario.id_usuario = '$id'");
+    $row = mysqli_fetch_array($consult);
+    //optener el host del usuario
+    $nombre_host = $row['nombre_host'];
+
+    $lineaAux = strstr($nombre_host, 'www.');
+	if (!empty($lineaAux)) 
+	{
+		$host = explode('www.', $lineaAux);
+		$nombre_host_master = $host[1];
+	} else {
+        $nombre_host_master = $nombre_host;
+    }
+
+    //verificar si el host del usuario tiene proteccion ssl
+    $consultSitio = mysqli_query($link,"SELECT * FROM sitio 
+                            WHERE nombre_sitio LIKE '%$nombre_host%'
+                            and activo_sitio = 1");
+    $resultadoSitio = mysqli_num_rows($consultSitio);
+    $rowSitio = mysqli_fetch_array($consultSitio);
+    $id_sitio = $rowSitio['id_sitio'];
+    
+    if (empty($id) || empty($activo) || $tipo != 2) {
+        header("Location: index.php");
+    }
+?>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Bienvenido <?php echo $nombre.' '.$apellido; ?></title>
+        <!-- Favicons -->
+        <link rel="shortcut icon" href="img/logo_icono.png">
+        <!-- Tell the browser to be responsive to screen width -->
+        <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+        <!-- Bootstrap 3.3.7 -->
+        <link rel="stylesheet" href="assets/bower_components/bootstrap/dist/css/bootstrap.min.css">
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="assets/bower_components/font-awesome/css/font-awesome.min.css">
+        <!-- Ionicons -->
+        <link rel="stylesheet" href="assets/bower_components/Ionicons/css/ionicons.min.css">
+        <!-- daterange picker -->
+        <link rel="stylesheet" href="assets/bower_components/bootstrap-daterangepicker/daterangepicker.css">
+        <!-- Theme style -->
+        <link rel="stylesheet" href="assets/dist/css/AdminLTE.min.css">
+        <!-- AdminLTE Skins. Choose a skin from the css/skins
+            folder instead of downloading all of them to reduce the load. -->
+        <link rel="stylesheet" href="assets/dist/css/skins/_all-skins.min.css">
+        <!-- Pace style -->
+        <link rel="stylesheet" href="assets/plugins/pace/pace.min.css">
+        <!-- bootstrap wysihtml5 - text editor -->
+        <link rel="stylesheet" href="assets/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css">
+        <!-- Select2 -->
+        <link rel="stylesheet" href="assets/bower_components/select2/dist/css/select2.min.css">
+        <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+        <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+        <![endif]-->
+        <!-- Google Font -->
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
+        <!-- DataTables -->
+        <link rel="stylesheet" href="assets/bower_components/datatables.net-bs/css/dataTables.bootstrap.min.css">
+        <link rel="stylesheet" href="css/cerulean/bootstrap.css" media="screen">
+        <script type="text/javascript" src="js/notifIt.js"></script>
+        <link rel="stylesheet" type="text/css" href="css/notifIt.css">
+        <link rel="stylesheet" type="text/css" href="css/c3.css">
+        <!-- <link rel="stylesheet" type="text/css" href="css/default/default.css"> -->
+        <link href="css/flags16-both.css" rel="stylesheet" type="text/css">
+        <link href="css/flags32-both.css" rel="stylesheet" type="text/css">
+
+        <!-- Morris chart -->
+        <link rel="stylesheet" href="assets/bower_components/morris.js/morris.css">
+
+        <link rel="stylesheet" type="text/css" href="assets/helpers/boilerplate.css">
+        <link rel="stylesheet" type="text/css" href="assets/helpers/grid.css">
+        <link rel="stylesheet" type="text/css" href="assets/helpers/utils.css">
+        <!-- ICONS -->
+        <link rel="stylesheet" type="text/css" href="assets/icons/fontawesome/fontawesome.css">
+        <!-- SNIPPETS -->
+        <link rel="stylesheet" type="text/css" href="assets/snippets/user-profile.css">
+        <link rel="stylesheet" type="text/css" href="assets/snippets/mobile-navigation.css">
+        <!-- Frontend theme -->
+        <link rel="stylesheet" type="text/css" href="assets/themes/frontend/layout.css">
+        <!-- <link rel="stylesheet" type="text/css" href="assets/themes/frontend/color-schemes/default.css"> -->
+        <!-- Components theme -->
+        <link rel="stylesheet" type="text/css" href="assets/themes/components/default.css">
+        <!-- Frontend responsive -->
+        <link rel="stylesheet" type="text/css" href="assets/helpers/frontend-responsive.css">
+        
+        <script>
+            function not1(){
+                notif({
+                    msg: "Se guardo correctamente",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+
+        <script>
+            function not2(){
+                notif({
+                    msg: "Algunos campos estan vacios",
+                    type: "error",
+                    position: "center"
+                });
+            }
+        </script>
+        
+        <script>
+            function not3(){
+                notif({
+                    msg: "Los datos se actualizarón correctamente",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+
+        <script>
+            function not4(){
+                notif({
+                    msg: "Se elimino correctamente",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+
+        <script>
+            function not5(){
+                notif({
+                    msg: "Error! algo salio mal",
+                    type: "error",
+                    position: "center"
+                });
+            }
+        </script>
+
+        <script>
+            function not6(){
+                notif({
+                    msg: "Datos actualizados!!",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+
+        <script>
+            function not7(){
+                notif({
+                    msg: "archivo actualizado!!",
+                    type: "success",
+                    position: "center"
+                });
+            }
+        </script>
+
+        <style type="text/css">
+            .skin-blue .main-header .navbar{
+                background-image: url('img/Heater_waf-2022.png');
+            }
+        </style>
+
+        <style type="text/css">
+            .flag.deprecated { color: silver; }
+            .flag.island { color: navy; }
+
+            .select2-container--default .select2-selection--single .select2-selection__rendered{
+                line-height: 24px;
+            }
+
+            .icono-relog{
+                float: left;
+                font-size: 1.4em;
+                padding: 0px 4px;
+                color: #212c4c;
+            }
+
+            .icono-bandera{
+                float: left;
+            }
+            
+            .estiloFila {
+                float:left;
+                display:inline;
+            }
+            
+            .dosColumnas li {
+                width: 50%;
+                display: block;
+            }
+
+            .tresColumnas li {
+                width:33.333%;
+            }
+
+            .cuatroColumnas li {
+                width:25%;
+            }
+
+            .cincoColumnas li {
+                width:16.666%;
+            }
+
+            .morris-hover-point{
+                color: #666 !important;
+            }
+
+            .progress{
+                margin-bottom: 0px !important;
+                width: 18em;
+            }
+
+            .small-box>.small-box-footer{
+                padding: 0px !important;
+            }
+
+            .small-box {
+                border-radius: 12px;
+            }
+
+            .bg-oscuro-gradient, .bg-teal-gradient {
+                background: -webkit-gradient(linear, left bottom, left top, color-stop(0, #ffffff), color-stop(1, #ffffff)) !important;
+                background-image: background: -webkit-linear-gradient(bottom, #141e30, #243b55) !important;
+                background-image: background: -o-linear-gradient(bottom, #141e30, #243b55) !important;
+                background-image: background: linear-gradient(to top, #141e30, #243b55) !important;
+                background: -moz-linear-gradient(center bottom, #141e30 0, #243b55 100%) !important;
+                background: -o-linear-gradient(#243b55, #141e30) !important;
+                filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#243b55', endColorstr='#141e30', GradientType=0) !important;
+                color: #fff;
+            }
+
+            #example2_filter {
+                display: none !important;
+            }
+
+            .nav-tabs-custom>.nav-tabs>li {
+                margin-bottom: 0px !important;
+                margin-right: 0px !important;
+            }
+
+            td.details-control {
+                background: url('img/details_open.png') no-repeat center center;
+                cursor: pointer;
+            }
+            tr.details td.details-control {
+                background: url('img/details_close.png') no-repeat center center;
+            }
+
+            #containerMapa {
+                height: 500px; 
+                width: 800px; 
+                margin: 0 auto; 
+            }
+
+            .highcharts-tooltip>span {
+                padding: 10px;
+                white-space: normal !important;
+                width: 200px;
+            }
+
+            .loading {
+                margin-top: 10em;
+                text-align: center;
+                color: gray;
+            }
+
+            .f32 .flag {
+                vertical-align: middle !important;
+            }
+
+            .main-header .header-logo {
+                background: url(img/logo_icono.png) left 50% no-repeat;
+            }
+
+        </style>
+
+        <style type="text/css">
+            .table {
+                color: #495057 !important;
+            }
+            /* Fonts weight */
+            .tabs-nav li a,
+            .main-header .header-nav > li > a,
+            .hero-heading,
+            .hero-text,
+            h1, h2, h3, h4, h5, h6,
+            .main-header .header-nav > li > a,
+            .hero-heading,
+            .hero-text {
+                font-family: "Raleway", "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-weight: 300;
+            }
+
+            /* Top bar menu */
+            .bg-topbar {
+                background: #fff;
+                border-bottom-color: #eee;
+            }
+            /* Main header */
+
+            .bg-header {
+                background: #fff;
+            }
+            .sticky-active .main-header {
+                box-shadow: 0 0 1px 2px rgba(0, 0, 0, 0.05);
+            }
+            /* Header subnav menu */
+
+            .main-header .header-nav > li > ul {
+                background: #253035;
+            }
+            .main-header .header-nav > li > ul li a:hover {
+                background: rgba(255,255,255,0.05);
+                color: #dce4e8;
+            }
+        </style>
+
+        <link rel="stylesheet" type="text/css" href="//github.com/downloads/lafeber/world-flags-sprite/flags32.css">
+
+        <script src="js/jquery.min.js" type="text/javascript"></script>
+        <script src="js/php_file_tree_jquery.js" type="text/javascript"></script>
+    </head>
+    
+    <body class="hold-transition skin-blue layout-top-nav">
+        <!-- Site wrapper -->
+        <div class="wrapper">
+            <?php include 'includes/navbar.php'; ?>
+            <!-- =============================================== -->
+            <!-- Content Wrapper. Contains page content -->
+            <div class="content-wrapper">
+                <!-- Main content -->
+                <section class="content">
+                    <!-- Custom Tabs -->
+                    <div class="nav-tabs-custom">
+                        <ul class="nav nav-tabs">
+
+                            <li class="active">
+                                <a href="#tab_1" data-toggle="tab">
+                                <i class="fa fa-shield"></i> Dashboard
+                                </a>
+                            </li>
+
+                            <?php
+                                if($resultadoSitio > 0)
+                                {
+                                    echo '
+                                    <li id="ataquesGrafica">
+                                        <a href="#tab_2" data-toggle="tab">
+                                        <i class="fa fa-list"></i> Ip Bloqueadas WAF
+                                        </a>
+                                    </li>';
+                                }
+                            ?>
+
+                            <li>
+                                <a href="#tab_3" data-toggle="tab" id="grafico">
+                                <i class="fa fa-pie-chart"></i> Tipos de ataques
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="#tab_4" data-toggle="tab" id="graficoP">
+                                <i class="fa fa-pie-chart"></i> Ataques por paises
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="#tab_9" data-toggle="tab" id="graficoVisita">
+                                <i class="fa fa-list"></i> Visitas Por Dominio
+                                </a>
+                            </li>
+
+                            <li class="dropdown pull-right">
+                                <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                                  Opciones <span class="caret"></span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li role="presentation">
+                                        <a role="menuitem" tabindex="-1" id="update" href="#0">
+                                            <small> <i class="fa fa-refresh"></i> Actualizar Bloqueos</small>
+                                        </a>
+                                    </li>
+
+                                    <li role="presentation">
+                                        <a role="menuitem" tabindex="-1" id="update2" href="#0">
+                                            <small> <i class="fa fa-refresh"></i> Actualizar Ip Bloqueadas</small>
+                                        </a>
+                                    </li>
+
+                                </ul>
+                            </li>
+                        </ul>
+                        <div class="tab-content">
+
+                            <div class="tab-pane active" id="tab_1">
+
+                                <!-- grafica de ataques -->
+                                <div class="box box-solid">
+                                    
+                                    <!-- Date range -->
+                                    <form id="FormRango" class="FormRango" method="post" autocomplete="off" enctype="multipart/form-data">
+                                        <div class="pull-right" style="width: 20%;">
+                                            <div class="input-group">
+                                                <div class="input-group-addon">
+                                                    <i class="fa fa-calendar"></i>
+                                                </div>
+                                                <input type="text" class="form-control pull-right" id="rangoGraficaUno">
+                                            </div>
+                                            <!-- /.input group -->
+                                        </div>
+                                    </form>
+                                    <!-- /.form group -->
+
+                                    <div class="box-header">
+                                        <i class="fa fa-shield"></i>
+                                        <h3 class="box-title">Ataques</h3>
+                                    </div>
+                                    <div class="box-body border-radius-none" id="chartUno">
+                                        <div class="chart" id="revenue-chart2" style="position: relative; height: 300px;"></div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <h3 class="box-title text-center">Rango de ataques</h3>
+                                    <div class="col-md-4">
+                                        <div id="" class="chart_waf1"></div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div id="" class="chart_waf2"></div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div id="" class="chart_waf3"></div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <?php
+                            if($resultadoSitio > 0)
+                            {
+                            ?>
+                            <div class="tab-pane" id="tab_2">
+
+                                <div style="overflow: auto;">
+                                    <table id="example1" class="table table-bordered table-striped" width="100%">
+                                        <thead>
+                                            <tr>
+                                                <th>Log</th>
+                                                <th>#</th>
+                                                <th>Fecha de bloqueo</th>
+                                                <th>Origen</th>
+                                                <th>Host Destino</th>
+                                                <th>Url</th>
+                                                <th>Tipo de ataque</th>
+                                                <th>Desbloquear</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <?php 
+                            } 
+                            ?>
+
+                            <div class="tab-pane" id="tab_3">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div id="" class="chart1"></div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div id="" class="chart2"></div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div id="" class="chart3"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane" id="tab_4">
+                                <div class="example-box-wrapper clearfix">
+
+                                    <!-- grafica de ataques -->
+                                    <div class="box box-solid">
+
+                                        <!-- Date range -->
+                                        <form id="FormRangoTres" class="FormRangoTres" method="post" autocomplete="off" enctype="multipart/form-data">
+                                            <div class="pull-right" style="width: 20%;">
+                                                <div class="input-group">
+                                                    <div class="input-group-addon">
+                                                        <i class="fa fa-calendar"></i>
+                                                    </div>
+                                                    <input type="text" class="form-control pull-right" id="rangoGraficaTres">
+                                                </div>
+                                                <!-- /.input group -->
+                                            </div>
+                                        </form>
+                                        <!-- /.form group -->
+
+                                        <div class="box-header">
+                                            <i class="fa fa-bolt"></i>
+                                            <h3 class="box-title"></h3>
+                                        </div>
+                                        <div class="box-body border-radius-none">
+                                            <div class="chart" id="line-chart3" style="height: 200px;"></div>
+                                        </div>
+                                    </div>
+                                    <!-- /.box -->
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div style="display: none;" id="" class="chart_tipoAtaque"></div>
+                                            <div id="container3" style="min-width: 400px; height: 500px; max-width: 650px; margin: 0 auto"></div>
+                                        </div>
+
+                                        <div class="col-md-6" id="listaPaises">
+                                            <div id="container4" style="min-width: 400px; height: 500px; max-width: 650px; margin: 0 auto"></div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <div class="tab-pane" id="tab_9">
+                                <div class="row">
+
+                                    <div class="col-md-12" id="estadisticaRango">
+                                        <!-- solid sales graph -->
+                                        <div class="box box-solid bg-oscuro-gradient">
+                                            <div class="box-header">
+                                            <i class="fa fa-line-chart"></i>
+                                            <h3 class="box-title">Grafica timeline visitas</h3>
+                                            <div class="box-tools pull-right">
+                                            </div>
+                                            </div>
+                                            <div class="box-body border-radius-none">
+                                                <!-- Date range -->
+                                                <form id="FormRangoVisitas" class="FormRangoVisitas" method="post" autocomplete="off" enctype="multipart/form-data">
+                                                    <div class="pull-right" style="width: 20%;">
+                                                        <div class="input-group">
+                                                            <div class="input-group-addon">
+                                                                <i class="fa fa-calendar"></i>
+                                                            </div>
+                                                            <input type="text" class="form-control pull-right" id="rangoGraficaVisita">
+                                                            <input type="hidden" id="nombredominio">
+                                                        </div>
+                                                        <!-- /.input group -->
+                                                    </div>
+                                                </form>
+                                                <!-- /.form group -->
+                                            <div class="chart" id="line-chart4" style="height: 250px;"></div>
+                                            </div><!-- /.box-body -->
+
+                                            <div class="overlay" id="overlayGraficaVisita" style="display: none;">
+                                                <i class="fa fa-refresh fa-spin"></i>
+                                            </div>
+                                            
+                                            <div class="box-footer no-border">
+                                            <div class="row">
+                                                <?php
+                                                    //optener rango de fechas por dia
+                                                    $actual = date("Y-m-d H:i:s");
+                                                    $pasadoAux = date("Y-m-d");
+                                                    $pasado = $pasadoAux.' 00:00:00';
+                                                    
+                                                    //total de visitas dia
+                                                    $consultDia = mysqli_query($link,"SELECT DISTINCT ip_visita FROM visita_dominio
+                                                                                WHERE visita_dominio.fecha_visita BETWEEN '$pasado' AND '$actual'
+                                                                                AND visita_dominio.activo_visita = 1");
+                                                    $totalDia = mysqli_num_rows($consultDia);
+
+                                                    //optener rango de fechas por semana
+                                                    $hoy = date("Y-m-d H:i:s");
+                                                    $semana = date("Y-m-d H:i:s",strtotime($hoy."- 1 week"));
+                                                    
+                                                    //total visitas semana
+                                                    $consultSemana = mysqli_query($link,"SELECT DISTINCT ip_visita FROM visita_dominio 
+                                                                                WHERE visita_dominio.fecha_visita BETWEEN '$semana' AND '$hoy'
+                                                                                AND visita_dominio.activo_visita = 1");
+                                                    $totalSemana = mysqli_num_rows($consultSemana);
+
+                                                    //optener rango de fechas por mes
+                                                    $meshoy = date("Y-m-d H:i:s");
+                                                    $mes = date("Y-m-d H:i:s",strtotime($hoy."- 1 month"));
+                                                    
+                                                    //total visita por mes
+                                                    $consultMes = mysqli_query($link,"SELECT DISTINCT ip_visita FROM visita_dominio
+                                                                                WHERE visita_dominio.fecha_visita BETWEEN '$mes' AND '$meshoy'
+                                                                                AND visita_dominio.activo_visita = 1");
+                                                    $totalMes = mysqli_num_rows($consultMes);
+                                                ?>
+                                                <div class="col-xs-4 text-center" style="border-right: 1px solid #f4f4f4">
+                                                    <input type="text" class="knob" data-max="<?php echo $totalMes; ?>" data-angleOffset="90" data-linecap="round" data-readonly="true" value="<?php echo $totalDia; ?>" data-width="60" data-height="60" data-fgColor="#39CCCC">
+                                                    <div class="knob-label">Total Visitas Dia</div>
+                                                </div><!-- ./col -->
+                                                
+                                                <div class="col-xs-4 text-center" style="border-right: 1px solid #f4f4f4">
+                                                    <input type="text" class="knob" data-max="<?php echo $totalMes; ?>" data-angleOffset="90" data-linecap="round" data-readonly="true" value="<?php echo $totalSemana; ?>" data-width="60" data-height="60" data-fgColor="#39CCCC">
+                                                    <div class="knob-label">Total Visitas Semana</div>
+                                                </div><!-- ./col -->
+
+                                                <div class="col-xs-4 text-center">
+                                                    <input type="text" class="knob" data-max="<?php echo $totalMes; ?>" data-angleOffset="90" data-linecap="round" data-readonly="true" value="<?php echo $totalMes; ?>" data-width="60" data-height="60" data-fgColor="#39CCCC">
+                                                    <div class="knob-label">Total Visitas Mes</div>
+                                                </div><!-- ./col -->
+                                            </div><!-- /.row -->
+                                            </div><!-- /.box-footer -->
+                                        </div><!-- /.box -->
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <!-- Custom tabs (Charts with tabs)-->
+                                        <div class="nav-tabs-custom">
+                                            <!-- Tabs within a box -->
+                                            <ul class="nav nav-tabs pull-right">
+                                                <li class="active">
+                                                    <a href="#sales-chart" data-toggle="tab"><i class="fa fa-map-o"></i></a>
+                                                </li>
+                                                <li class="pull-left header">
+                                                </li>
+                                            </ul>
+                                            <div class="tab-content no-padding">
+                                                <!-- <form style="float: right;" id="FormRangoCinco" class="FormRangoCinco" method="post" autocomplete="off" enctype="multipart/form-data">
+                                                    <div class="pull-right" style="width: 20%;">
+                                                        <div class="input-group">
+                                                            <div class="input-group-addon">
+                                                                <i class="fa fa-calendar"></i>
+                                                            </div>
+                                                            <input type="text" class="form-control pull-right" id="rangoGraficaCinco">
+                                                        </div>
+                                                    </div>
+                                                </form> -->
+
+                                                <div class="example-box-wrapper clearfix">
+                                                    <div id="containerBarDominio" style="min-width: 400px; height: 400px; margin: 0 auto"></div>
+                                                </div>
+                                            </div>
+                                        </div><!-- /.nav-tabs-custom -->
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <!-- <div class="text-center">
+                                            <select id="dropdown4" class="select2">
+                                                <option value="">Lista de Dominios</option>
+                                                <?php
+                                                    // $consult = mysqli_query($link,"SELECT DISTINCT dominio FROM visita_dominio WHERE activo_visita = 1");
+                                                    // while($row = mysqli_fetch_array($consult)){
+                                                    //     if(!empty($row['dominio'])){
+                                                    //         echo '<option value="'.$row['dominio'].'">'.$row['dominio'].'</option>';
+                                                    //     }
+                                                    // }
+                                                ?>
+                                            </select>
+                                        </div> -->
+                                        <table id="example4" class="table table-bordered table-striped" width="100%">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Fecha de Visita</th>
+                                                    <th>Ip de Visita</th>
+                                                    <th>Dominio</th>
+                                                    <th>Total visita por IP</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                            
+                        </div>
+                        <!-- /.tab-content -->
+                    </div>
+                    <!-- nav-tabs-custom -->
+                </section>
+                <!-- /.content -->
+
+                <div class="modal fade" id="modalE">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span></button>
+                                <h5 class="modal-title">Eliminar Data</h5>
+                            </div>
+                            <div class="modal-body">
+                                <form id="Form1" class="FormB" action="" method="" autocomplete="off">
+                                    <h4 class="text-center">¿Esta seguro de limpiar la tabla?</h4>
+                                    <div class="form-group col-md-12">
+                                        <div class="input-group date">
+                                            <div class="input-group-addon">
+                                                <i class="fa fa-list"></i>
+                                            </div>
+                                            <select class="form-control" name="opc">
+                                                <option value="1">Las primeras 10 Filas</option>
+                                                <option value="2">Las primeras 20 Filas</option>
+                                                <option value="3">Las primeras 30 Filas</option>
+                                                <option value="4">Las primeras 40 Filas</option>
+                                                <option value="5">Las primeras 50 Filas</option>
+                                                <option value="6">Todas las filas</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="text-center col-md-12">
+                                        <button class="btn btn-default" data-dismiss="modal" type="reset"><i class="fa fa-close"></i> Cancelar</button>
+                                        <button class="btn btn-danger" type="button" id="btnE"><i class="fa fa-trash"></i> Elimimar</button>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+
+                <div class="modal fade" id="modalEliminar">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span></button>
+                                <h5 class="modal-title">Eliminar Data</h5>
+                            </div>
+                            <div class="modal-body">
+                                <form id="Form2" class="FormC" action="" method="" autocomplete="off">
+                                    <h4 class="text-center">¿Esta seguro de eliminar los datos?</h4>
+                                    
+                                    <div class="text-center col-md-12">
+                                        <button class="btn btn-default" data-dismiss="modal" type="reset"><i class="fa fa-close"></i> Cancelar</button>
+                                        <button class="btn btn-danger" type="button" id="btnEliminar"><i class="fa fa-trash"></i> Elimimar</button>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+
+                <div class="modal fade" id="modalUrl">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span></button>
+                                <h5 class="modal-title">Url</h5>
+                            </div>
+                            <div class="modal-body" style="overflow: auto;">
+                                <p id="textoUrl"></p>
+                            </div>
+                            <div class="modal-footer">
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+
+                <div class="modal fade" id="modalInfo">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span></button>
+                                <h5 class="modal-title">INTERNAL RULES</h5>
+                            </div>
+                            <div class="modal-body" style="overflow: auto;">
+                                <p>
+                                   Las reglas internas son reglas que pueden ser activadas por  el waf,cuando una solicitud es incorrecta o extremadamente inusual, el waf no puede analizar la solicitud (es decir, tipo de contenido desconocido).
+                                   <br><br>
+                                   Tenga en cuenta que esas reglas no establecen un puntaje interno, sino que generalmente establecen el indicador de bloqueo. 
+                                </p>
+                            </div>
+                            <div class="modal-footer">
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+
+                <div class="modal fade" id="modalEliminarHost">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span></button>
+                                <h5 class="modal-title">Lista de Host</h5>
+                            </div>
+                            <div class="modal-body">
+                                <table id="example3" class="table table-bordered table-striped" width="100%">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center">#</th>
+                                            <th class="text-center">Host</th>
+                                            <th class="text-center">Eliminar</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                            $consult = mysqli_query($link,"SELECT DISTINCT server FROM bloqueo");
+                                            $i = 1;
+                                            while($row = mysqli_fetch_array($consult)){
+                                                $nombre_dominio = addslashes($row['server']);
+                                                $nombre_limpio = $row['server'];
+                                                if(!empty($nombre_dominio)){
+                                                    echo '<tr>
+                                                            <td class="text-center">'.$i.'</td>
+                                                            <td class="text-center">'.$nombre_dominio.'</td>
+                                                            <td class="text-center">
+                                                                <a href="#0" type="'.$nombre_limpio.'" id="btnEHost" class="btn btn-danger"><i class="fa fa-trash"></i> Eliminar</a>
+                                                            </td>
+                                                          </tr>';
+                                                    $i++;
+                                                }
+                                            }
+                                        ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="modal-footer">
+                            </div>
+                        </div>
+                        <!-- /.modal-content -->
+                    </div>
+                    <!-- /.modal-dialog -->
+                </div>
+
+                <!-- Modal editar ip-->
+                <div class="modal fade" id="ModalDesbloquear" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="exampleModalLabel">Desbloquear IP</h5>
+                            </div>
+                            <div class="modal-body">
+                                <form id="Form3" class="FormUb" action="" method="" autocomplete="off">
+                                    <div class="form-group col-md-12">
+                                        <label>Dirección ip</label>
+                                        <input type="text" class="form-control" id="ip_edit" name="ip" placeholder="Dirección ip">
+                                    </div>
+                                    <div class="text-center col-md-12">
+                                        <button class="btn btn-default" data-dismiss="modal" type="reset"><i class="fa fa-close"></i> Cancelar</button>
+                                        <button class="btn btn-primary" type="button" id="btnDesbloqueo"><i class="fa fa-save"></i> Guardar</button>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.modal -->
+
+                <!-- Modal editar ip-->
+                <div class="modal fade" id="modalNpassword" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="exampleModalLabel">Nueva contraseña</h5>
+                            </div>
+                            <div class="modal-body">
+                                <form id="Form4" class="FormNP" action="" method="" autocomplete="off">
+                                    <div class="form-group col-md-12">
+                                        <label>Nueva contraseña</label>
+                                        <input type="password" class="form-control" id="password" name="password" placeholder="">
+                                        <input type="hidden" class="form-control" name="id_usuario" value="<?php echo $id; ?>">
+                                    </div>
+                                    <div class="text-center col-md-12">
+                                        <button class="btn btn-default" data-dismiss="modal" type="reset"><i class="fa fa-close"></i> Cancelar</button>
+                                        <button class="btn btn-primary" type="button" id="btnNuevoPass"><i class="fa fa-save"></i> Guardar</button>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.modal -->
+
+                <!-- Modal editar sitio-->
+                <div class="modal fade" id="modalUpdateSitio" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document" style="width: 900px;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="exampleModalLabel">Datos sitio</h5>
+                            </div>
+                            <div class="modal-body">
+                                <div id="content_dynamic_sitio">
+                                </div>
+                            </div>
+                            <div class="modal-footer"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <!-- /.content-wrapper -->
+            
+            <footer class="main-footer" style="background-image: url('img/Footer_waf-2022.png'); padding: 100px;border-top: 0px solid #d2d6de;background-color: #ecf0f5;border-top: 0px solid #d2d6de; background-color: #ecf0f5;background-size: cover; background-repeat: no-repeat;">
+                <div class="pull-right hidden-xs" style="margin-top: 70px;">
+                    <strong>
+                        <a style="color: #ffffff;" target="_blank" href="https://www.netsoluciones.com">
+                        <h5 style="margin-top: 2px;">Diseñado por Netsoluciones</h5>
+                        </a>
+                    </strong>
+                </div>
+            </footer>
+
+        </div>
+        <!-- ./wrapper -->
+        <!-- jQuery 3 -->
+        <script src="assets/bower_components/jquery/dist/jquery.min.js"></script>
+        <!-- Bootstrap 3.3.7 -->
+        <script src="assets/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+        <!-- DataTables -->
+        <script src="assets/bower_components/datatables.net/js/jquery.dataTables.min.js"></script>
+        <script src="assets/bower_components/datatables.net-bs/js/dataTables.bootstrap.min.js"></script>
+        <!-- date-range-picker -->
+        <script src="assets/bower_components/moment/min/moment.min.js"></script>
+        <script src="assets/bower_components/bootstrap-daterangepicker/daterangepicker.js"></script>
+        <!-- bootstrap datepicker -->
+        <script src="assets/bower_components/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js"></script>
+        <!-- SlimScroll -->
+        <script src="assets/bower_components/jquery-slimscroll/jquery.slimscroll.min.js"></script>
+        <!-- FastClick -->
+        <script src="assets/bower_components/fastclick/lib/fastclick.js"></script>
+        <!-- AdminLTE App -->
+        <script src="assets/dist/js/adminlte.min.js"></script>
+        <!-- AdminLTE for demo purposes -->
+        <script src="assets/dist/js/demo.js"></script>
+        <!-- charts -->
+        <script src="js/d3.v5.min.js" charset="utf-8"></script>
+        <script src="js/c3.js"></script>
+        <!-- PACE -->
+        <script src="assets/bower_components/PACE/pace.min.js"></script>
+        <!-- ChartJS -->
+        <script src="js/Chart.min.js"></script>
+        <!-- Select2 -->
+        <script src="assets/bower_components/select2/dist/js/select2.full.min.js"></script>
+        <!-- ChartJS -->
+        <script src="assets/bower_components/chart.js/Chart.js"></script>
+        <!-- jQuery Knob Chart -->
+        <script src="assets/bower_components/jquery-knob/dist/jquery.knob.min.js"></script>
+        <!-- Morris.js charts -->
+        <script src="assets/bower_components/raphael/raphael.min.js"></script>
+        <script src="assets/bower_components/morris.js/morris.min.js"></script>
+
+        <!-- Skrollr -->
+        <script type="text/javascript" src="assets/widgets/skrollr/skrollr.js"></script>
+
+        <!-- HG sticky -->
+        <script type="text/javascript" src="assets/widgets/sticky/sticky.js"></script>
+
+        <!-- WOW -->
+        <script type="text/javascript" src="assets/widgets/wow/wow.js"></script>
+
+        <!-- Theme layout -->
+        <script type="text/javascript" src="assets/themes/frontend/layout.js"></script>
+        
+        <script type="text/javascript">
+            // $(document).ajaxStart(function () {
+           //      Pace.restart()
+           // });
+        </script>
+
+        <script type="text/javascript">
+            $(document).ready(function(){
+                $('.select2').select2();
+            });
+
+            /* jQueryKnob */
+            $(".knob").knob();
+
+            $('.datepickerDate1').datepicker({
+                autoclose: true,
+                dateFormat: 'dd/mm/yy'
+            });
+        </script>
+
+        <script type="text/javascript">
+            $(document).ready(function(){
+                $('#example3').DataTable();
+            });
+        </script>
+
+        <script type="text/javascript">
+            $(document).ready(function(){
+                $(document).on('click', '#btnEHost', function(e){
+                    e.preventDefault();
+                    var nombre_host = $(this).attr('type');
+                    //alert(nombre_host);
+                    $.ajax({
+                        url: 'controller/e_host.php',
+                        type: 'POST',
+                        data: 'nombre='+nombre_host,
+                        dataType: 'html',
+                        success: function(data) {
+                            if (data == 'bien') {
+                                not4();
+                                setTimeout("location.href = 'inicio.php'",3000);
+                            } else {
+                                not5();
+                            }
+                        }
+                    });    
+                });
+            });
+        </script>
+
+        <script type="text/javascript">
+            $(document).ready(function(){
+                //mostrar la info
+                $(document).on('click', '#btnViewData', function(e){
+                  e.preventDefault();
+                  var ip = $(this).data('ip');
+                  $('#ip_edit').val(ip);
+                });
+
+                // bloquear ip
+                $(document).on('click', '#btnBloquearIp', function(e){
+                    e.preventDefault();
+                    var id_ip = $(this).data('ip');
+                    //   alert(ip);
+                    var parametro = {
+                        "id_ip" : id_ip
+                    }
+                    $.ajax({
+                        type: 'POST',
+                        url: 'controller/e_white_ip.php',
+                        data: parametro,
+                        success: function(data) {
+                        if (data == 'bien') {
+                            not4();
+                            setTimeout("location.href = 'inicio.php'",2000);
+                        } else{
+                            not5();
+                        }
+                        }
+                    }); 
+                });
+
+                // agregar a whitelist
+                $(document).on('click', '#btnWhiteList', function(e){
+                    e.preventDefault();
+                    var id_bloqueo = $(this).data('id');
+                    //alert(id_bloqueo);
+                    var parametro = {
+                        "id_bloqueo" : id_bloqueo
+                    }
+                    $.ajax({
+                        type: 'POST',
+                        url: 'controller/g_whiteListBloqueo.php',
+                        data: parametro,
+                        success: function(data) {
+                            if (data == 'bien') {
+                                not4();
+                                //alert(data);
+                                setTimeout("location.href = 'inicio.php'",2000);
+                            } else{
+                                //alert(data);
+                                not5();
+                            }
+                        }
+                    }); 
+                });
+
+                //guardar la ip
+                $(document).on('click', '#btnDesbloqueo', function(e){
+                  e.preventDefault();
+                  $.ajax({
+                    type: 'POST',
+                    url: 'controller/g_white_ip.php',
+                    data: $('.FormUb').serialize(),
+                    success: function(data) {
+                      if (data == 'bien') {
+                        not1();
+                        setTimeout("location.href = 'inicio.php'",3000);
+                      }else{
+                        //alert(data);
+                        not2();
+                      }
+                    }
+                  });      
+                });
+
+
+              });
+        </script>
+
+        <script>
+            $(document).ready(function(){
+                $(document).on('click', '#btnNuevoPass', function(e){
+                    e.preventDefault();
+                    $.ajax({
+                        type: 'POST',
+                        url: 'controller/a_password.php',
+                        data: $('.FormNP').serialize(),
+                        success: function(data) {
+                            if (data == 'bien') {
+                                not6();
+                                setTimeout("location.href = 'inicio.php'",3000);
+                            } else {
+                                //alert(data);
+                                not2();
+                            }
+                        }
+                    });      
+                });
+            });
+        </script>
+
+        <!-- table principal -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                $('#example1').DataTable({
+                     "processing": true,
+                     "serverSide": true,
+                     "ajax": "ajax_table/ajax_table2.php?busqueda!=<?php echo $nombre_host; ?>",
+                     "createdRow": function ( row, data, index ) {
+                        //
+                        if(data[0]){
+                            $('td', row).eq(0).addClass("details-control");
+                            $('td', row).eq(0).html('');
+                        }
+
+                        //
+                        if (data[2]) {
+                            //$('td', row).eq(2).append('<i class="fa fa-clock-o icono-relog"></i>');
+                        }
+
+                        //
+                        if (data[3]) {
+                            $('td', row).eq(3).append('<span class="f16"><i class="flag ac icono-bandera"></i></span>');
+                            //optener la bandera del pais
+                            var ip = data[3];
+                            var parametro = {
+                                "ip_bandera" : ip
+                            }
+                            $.ajax({
+                                url:  'controller/return_badera.php', 
+                                type: 'POST',
+                                data: parametro,
+                                dataType: 'html'
+                            })
+                            .done(function(result){
+                                $('td', row).eq(3).html('');
+                                $('td', row).eq(3).html(result+' '+data[3]);
+                            })
+                            .fail(function(){
+                                $('td', row).eq(3).append('<span class="f16"><i class="flag ac icono-bandera"></i></span>');
+                            });
+                        }
+
+                        //
+                        if (data[4]) {
+                            $('td', row).eq(4).append('<i class="fa fa-server icono-relog"></i>');
+                        }
+
+                        //
+                        if (data[7]) {
+                            //saber si la ip esta bloqueada
+                            var ip = data[7];
+                            var parametro = {
+                                "ip_bloqueo" : ip
+                            }
+                            $.ajax({
+                                url:  'controller/return_boton.php', 
+                                type: 'POST',
+                                data: parametro,
+                                dataType: 'html'
+                            })
+                            .done(function(result){
+                                $('td', row).eq(7).html('');
+                                if(result > 0){
+                                    $('td', row).eq(7).html('<button class="btn btn-danger"><a href="#0" data-ip="'+result+'" style="color: #FFFFFF;" id="btnBloquearIp"><i class="fa fa-lock"></i> Bloquear IP</a></btutton>');
+                                } else {
+                                    $('td', row).eq(7).html('<button class="btn btn-primary"><a href="#0" data-toggle="modal" data-target="#ModalDesbloquear" data-ip="'+data[7]+'" style="color: #FFFFFF;" id="btnViewData"><i class="fa fa-unlock"></i> Desbloquear IP</a></btutton>');
+                                }
+                            })
+                            .fail(function(){
+                                $('td', row).eq(7).append('');
+                            });
+                        }
+
+                        //
+                        if (data[6]) {
+                            $('td', row).eq(6).html('');
+                            var ataque = data[6].toLowerCase();
+
+                            if (ataque == 'xss' || ataque == 'Cross Site Scripting') {
+                                $('td', row).eq(6).html('<a href="https://es.wikipedia.org/wiki/Cross-site_scripting" target="_black">'+data[6]+'</a>');
+                            } else if(ataque == 'sqli' || ataque == 'sql injections'){
+                                $('td', row).eq(6).html('<a href="https://es.wikipedia.org/wiki/Inyecci%C3%B3n_SQL" target="_black">'+data[6]+'</a>');
+                            } else if(ataque == 'directory traversal'){
+                                $('td', row).eq(6).html('<a href="https://en.wikipedia.org/wiki/Directory_traversal_attack" target="_black">'+data[6]+'</a>');
+                            } else if(ataque == 'internal rules'){
+                                $('td', row).eq(6).html('<a role="menuitem" tabindex="-1" href="#0" data-toggle="modal" data-target="#modalInfo">'+data[6]+'</a>');
+                            } else if(ataque == 'rfi'){
+                                $('td', row).eq(6).html('<a href="https://es.wikipedia.org/wiki/Remote_File_Inclusion" target="_black">'+data[6]+'</a>');
+                            } else {
+                                $('td', row).eq(6).html('<a href="#">'+data[6]+'</a>');
+                            }
+                        }
+
+                        //
+                        if (data[5]) {
+                            $('td', row).eq(5).html('');
+                            var url = data[5];
+                            var size = url.length;
+
+                            if (size <= 24) {
+                                $('td', row).eq(5).html(url);
+                            } else {
+                                $('td', row).eq(5).html('<a role="menuitem" tabindex="-1" href="#0" data-toggle="modal" data-target="#modalUrl" id="btnUrl" data-url="'+data[5]+'">Ver mas <i class="fa fa-plus"></i></a>');
+                            }
+                        }
+                    }
+                });
+
+                var table = $('#example1').DataTable();
+                $('#dropdown1').on('change',function(){
+                    table.columns(4).search(this.value).draw();
+                        //actualizar grafica
+                        var server_name = this.value;
+                        $('#line-chart2').html('');  
+                        var parametro = {
+                            "server_name" : server_name                        
+                        }
+                        $.ajax({
+                            url:  'controller/new_grafica_tres.php', 
+                            type: 'POST',
+                            data: parametro,
+                            dataType: 'html'
+                        })
+                        .done(function(data){  
+                            $('#line-chart2').html('');    
+                            $('#line-chart2').html(data); // mostrar la data
+                        })
+                        .fail(function(){
+                            $('#line-chart2').html('');
+                        });
+                });
+
+                function format (callback, d) {
+                    //return d[0];
+                    tbody = '';
+
+                    tbody += '<tr style="background: aliceblue;"><td>' + d[0] + '</td></tr>';
+                    tbody += '<tr style="text-align: center;"><td> <button class="btn btn-info"><a href="#0" data-id="'+d[1]+'" style="color: #FFFFFF;" id="btnWhiteList"><i class="fa fa-unlock"></i> Add Whitelist</a></btutton> </td></tr>';
+
+                    callback($('<table id="example" class="table table-bordered table-striped" width="100%">' + tbody + '</table>')).show();
+                }
+
+                // Array to track the ids of the details displayed rows
+                var detailRows = [];
+
+                $('#example1 tbody').on( 'click', 'tr td.details-control', function () {
+                    var tr = $(this).closest('tr');
+                    var row = table.row( tr );
+                    var idx = $.inArray( tr.attr('id'), detailRows );
+ 
+                    if ( row.child.isShown() ) {
+                        tr.removeClass( 'details' );
+                        row.child.hide();
+                     
+                        // Remove from the 'open' array
+                        detailRows.splice( idx, 1 );
+                    }
+                    else {
+                        format(row.child, row.data());
+                        tr.addClass( 'details' );
+
+                        // Add to the 'open' array
+                        if ( idx === -1 ) {
+                            detailRows.push( tr.attr('id') );
+                        }
+                    }
+                });
+
+
+                $(document).on('click', '#btnUrl', function(e){
+                    e.preventDefault();
+                    var url = $(this).data('url');
+                    //alert(url);
+                    $('#textoUrl').html('');
+                    $('#textoUrl').html(url);
+                });
+                  
+            });
+        </script>
+
+        <!-- actualizar datos -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                //actualizar bloqueos waf
+                $('#update').click(function () {
+                    $.ajax({
+                      url: 'controller/ajax_convertion.php', 
+                        success: function (result) {
+                            not6();
+                            setTimeout("location.href = 'inicio.php'",3000);
+                        }
+                    })
+                });
+
+                //actualizar bloqueos fuerza bruta
+                $('#update2').click(function () {
+                    $.ajax({
+                      url: 'controller/ajax_convertion_bloqueo_ip.php', 
+                        success: function (result) {
+                            not6();
+                            setTimeout("location.href = 'inicio.php'",3000);
+                        }
+                    })
+                });
+
+            });
+        </script>
+
+        <!-- gradica de ip bloqueadas por fechas Uno-->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                var area = new Morris.Area({
+                        element: 'revenue-chart2',
+                        resize: true,
+                        data: [
+                        <?php
+                            $consult = mysqli_query($link,"SELECT * FROM grafica_principal ORDER BY fecha_bloqueo ASC");
+                            
+                            while($rows = mysqli_fetch_array($consult))
+                            {
+                                $fecha_bloqueo_waf = $rows['fecha_bloqueo'];
+                                $total_bloqueo_waf = $rows['total_waf'];
+                                $total_bloqueo_fue = $rows['total_fuerza'];
+
+                                echo '{ y: "'.$fecha_bloqueo_waf.'", item1: '.$total_bloqueo_fue.', item2: '.$total_bloqueo_waf.'},';
+                            }
+                        ?>
+                        ],
+                        xkey: 'y',
+                        ykeys: ['item1', 'item2'],
+                        labels: ['Total Fuerza Bruta', 'Total WAF'],
+                        lineColors: ['#a0d0e0', '#3c8dbc'],
+                        hideHover: 'auto'
+                    });
+            });
+        </script>
+
+        <!-- gradica de ip bloqueadas por fechas Dos-->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                $(document).on('click', '#ataquesGrafica', function(e){
+                    e.preventDefault();
+                    var line = new Morris.Line({
+                        element          : 'line-chart2',
+                        resize           : true,
+                        data             : [
+                         <?php
+                            $consult = mysqli_query($link,"SELECT * FROM grafica_bloqueo");
+                            
+                            while($rows = mysqli_fetch_array($consult))
+                            {
+                                $fecha_bloqueo = $rows['fecha_bloqueo'];
+                                $total_bloqueo = $rows['total_bloqueo'];
+
+                                echo '{ y: "'.$fecha_bloqueo.'", item1: '.$total_bloqueo.'},';
+                            }
+                        ?>
+                        ],
+                        xkey             : 'y',
+                        ykeys            : ['item1'],
+                        labels           : ['Total Ataques'],
+                        lineColors       : ['#0a63a4'],
+                        lineWidth        : 2,
+                        hideHover        : 'auto',
+                        gridTextColor    : "#888888",
+                        gridStrokeWidth  : 0.4,
+                        pointSize        : 4,
+                        pointStrokeColors: ["#0a63a4"],
+                        gridLineColor    : "#888888",
+                        gridTextFamily   : 'Open Sans',
+                        gridTextSize     : 10
+                    });
+                });
+            });
+        </script>
+
+        <!-- grafica de tipos de ataques en la pestaña de paises-->
+        <script>
+            $(document).ready(function(){
+                $(document).on('click', '#graficoP', function(e){
+                    $(".chart_tipoAtaque").attr("id","chart_tipoAtaque");
+                    
+                    //grafica de tipo de ataques
+                    var chart_tipoAtaque = c3.generate({
+                        data: {
+                            columns: [
+                            <?php
+                                $consult = mysqli_query($link,"SELECT * FROM rules WHERE rules.activo_rule = 1");
+                                //optener el total de reglas
+                                $total = mysqli_num_rows($consult);
+                                $i = 1;
+                                while($rows = mysqli_fetch_array($consult))
+                                {
+                                    $total_bloqueos = 0;
+                                    $i++;
+                                    $id_rule = $rows['id_rule'];
+                                    //optener totales de bloqueos por reglas
+                                    $consult2 = mysqli_query($link,"SELECT * FROM bloqueo 
+                                                                INNER JOIN detalle_rule 
+                                                                ON bloqueo.idN = detalle_rule.numero_rule_detalle 
+                                                                INNER JOIN rules 
+                                                                ON detalle_rule.id_rule = rules.id_rule 
+                                                                WHERE bloqueo.activo_bloqueo = 1 
+                                                                AND rules.id_rule = '$id_rule'");
+                                    $total_bloqueos = mysqli_num_rows($consult2);
+                                
+                                    echo '["'.$rows['nombre_rule'].'", '.$total_bloqueos.' ],';
+                                }
+                            ?>
+                            ],
+                            type : 'donut',
+                            onclick: function (d, i) {
+                                //setTimeout("location.href = 'tipo_bloqueo.php?tipo!="+d.id+"'",100);
+                            },
+                        },
+                        donut: {
+                            title: "Tipos Ataques",
+                            label: {
+                                format: function (value, ratio, id) {
+                                    return d3.format(',')(value);
+                                }
+                            },
+                        },
+                        tooltip: {
+                            grouped: false,
+                            format: {
+                                value: function (value, ratio, id) {
+                                    return d3.format(',')(value);
+                                }
+                            }
+                        },
+                        legend: {
+                            show: true
+                        },
+                    });
+                    $("#chart_tipoAtaque").html(chart_tipoAtaque.element);
+                });
+            });
+        </script>
+
+        <!-- graficas de ataques del waf y ataque de fuerza bruta -->
+        <script>
+            $(document).ready(function(){
+                $(".chart_waf1").attr("id","chart_waf1");
+                $(".chart_waf2").attr("id","chart_waf2");
+                $(".chart_waf3").attr("id","chart_waf3");
+                
+                //grafica para hoy
+                var chart_waf1 = c3.generate({
+                    data: {
+                        columns: [
+                        <?php
+                            //optener rango de fechas por dia
+                            $actual = date("Y-m-d H:i:s");
+                            $pasadoAux = date("Y-m-d");
+                            $pasado = $pasadoAux.' 00:00:00';
+                            
+                            //total de bloqueos en el waf
+                            $consultWaf = mysqli_query($link,"SELECT * FROM bloqueo 
+                                                        WHERE bloqueo.activo_bloqueo = 1
+                                                        AND bloqueo.fecha_bloqueo BETWEEN '$pasado' AND '$actual'");
+                            $totalBloqueosWaf = mysqli_num_rows($consultWaf);
+
+                            //total de bloqueos de fuerza bruta
+                            $consultFuerza = mysqli_query($link,"SELECT * FROM bloqueo_ip 
+                                WHERE bloqueo_ip.fecha_bloqueo_ip BETWEEN '$pasado' AND '$actual'");
+                            $totalBloqueosFuerza = mysqli_num_rows($consultFuerza);
+                            
+                            //
+                            echo '["Bloqueos WAF", '.$totalBloqueosWaf.' ],';
+                            echo '["Bloqueos Fuerza Bruta", '.$totalBloqueosFuerza.' ],';
+                            
+                            ?>
+                        ],
+                        type : 'donut',
+                        onclick: function (d, i) { 
+                            //alert(d.id);
+                            //setTimeout("location.href = 'tipo_bloqueo.php?tipo!="+d.id+"'",100);
+                            //setTimeout("location.href = 'ip_bloqueadas.php?tipo!="+d.id+"&rango!=HOY'",100);
+                        },
+                    },
+                    donut: {
+                        title: "HOY",
+                        label: {
+                            format: function (value, ratio, id) {
+                                return d3.format(',')(value);
+                            }
+                        },
+                    },
+                    tooltip: {
+                        grouped: false,
+                        format: {
+                            value: function (value, ratio, id) {
+                                return d3.format(',')(value);
+                            }
+                        }
+                    },
+                    legend: {
+                        show: true
+                    },
+                });
+                $("#chart_waf1").html(chart_waf1.element);
+
+                //grafica de ultima semana
+                var chart_waf2 = c3.generate({
+                    data: {
+                        columns: [
+                        <?php
+                            //optener rango de fechas por semana
+                            $hoy = date("Y-m-d H:i:s");
+                            $semana = date("Y-m-d H:i:s",strtotime($hoy."- 1 week"));
+                            
+                            //total de bloqueos en el waf
+                            $consultWaf = mysqli_query($link,"SELECT * FROM bloqueo 
+                                                        WHERE bloqueo.activo_bloqueo = 1
+                                                        AND bloqueo.fecha_bloqueo BETWEEN '$semana' AND '$hoy'");
+                            $totalBloqueosWaf = mysqli_num_rows($consultWaf);
+
+                            //total de bloqueos de fuerza bruta
+                            $consultFuerza = mysqli_query($link,"SELECT * FROM bloqueo_ip 
+                                                        WHERE bloqueo_ip.fecha_bloqueo_ip BETWEEN '$semana' AND '$hoy'");
+                            $totalBloqueosFuerza = mysqli_num_rows($consultFuerza);
+                            
+                            //
+                            echo '["Bloqueos WAF", '.$totalBloqueosWaf.' ],';
+                            echo '["Bloqueos Fuerza Bruta", '.$totalBloqueosFuerza.' ],';
+                            ?>
+                        ],
+                        type : 'donut',
+                        onclick: function (d, i) { 
+                            //alert(d.id);
+                            //setTimeout("location.href = 'tipo_bloqueo.php?tipo!="+d.id+"'",100);
+                            //setTimeout("location.href = 'ip_bloqueadas.php?tipo!="+d.id+"&rango!=SEMANA'",100);
+                        },
+                    },
+                    donut: {
+                        title: "Ultima Semana",
+                        label: {
+                            format: function (value, ratio, id) {
+                                return d3.format(',')(value);
+                            }
+                        }
+                    },
+                    tooltip: {
+                        grouped: false,
+                        format: {
+                            value: function (value, ratio, id) {
+                                return d3.format(',')(value);
+                            }
+                        }
+                    },
+                    legend: {
+                        show: true
+                    },
+                });
+                $("#chart_waf2").html(chart_waf2.element);
+
+                //grafica de ultimo mes
+                var chart_waf3 = c3.generate({
+                    data: {
+                        columns: [
+                        <?php
+                            //optener rango de fechas por mes
+                            $meshoy = date("Y-m-d H:i:s");
+                            $mes = date("Y-m-d H:i:s",strtotime($hoy."- 1 month"));
+                            
+                            //total de bloqueos en el waf
+                            $consultWaf = mysqli_query($link,"SELECT * FROM bloqueo 
+                                                        WHERE bloqueo.activo_bloqueo = 1
+                                                        AND bloqueo.fecha_bloqueo BETWEEN '$mes' AND '$meshoy'");
+                            $totalBloqueosWaf = mysqli_num_rows($consultWaf);
+
+                            //total de bloqueos de fuerza bruta
+                            $consultFuerza = mysqli_query($link,"SELECT * FROM bloqueo_ip 
+                                                        WHERE bloqueo_ip.fecha_bloqueo_ip BETWEEN '$mes' AND '$meshoy'");
+                            $totalBloqueosFuerza = mysqli_num_rows($consultFuerza);
+                            
+                            //
+                            echo '["Bloqueos WAF", '.$totalBloqueosWaf.' ],';
+                            echo '["Bloqueos Fuerza Bruta", '.$totalBloqueosFuerza.' ],';
+                            ?>
+                        ],
+                        type : 'donut',
+                        onclick: function (d, i) { 
+                            //alert(d.id);
+                            //setTimeout("location.href = 'tipo_bloqueo.php?tipo!="+d.id+"'",100);
+                            //setTimeout("location.href = 'ip_bloqueadas.php?tipo!="+d.id+"&rango!=MES'",100);
+                        },
+                    },
+                    donut: {
+                        title: "Ultimo Mes",
+                        label: {
+                            format: function (value, ratio, id) {
+                                return d3.format(',')(value);
+                            }
+                        }
+                    },
+                    tooltip: {
+                        grouped: false,
+                        format: {
+                            value: function (value, ratio, id) {
+                                return d3.format(',')(value);
+                            }
+                        }
+                    },
+                    legend: {
+                        show: true
+                    },
+                });
+                $("#chart_waf3").html(chart_waf3.element);
+
+            });
+        </script>
+
+        <!-- grafica de tipos de ataques -->
+        <script>
+            $(document).on('click','#grafico',function() {
+                $(".chart1").attr("id","chart1");
+                $(".chart2").attr("id","chart2");
+                $(".chart3").attr("id","chart3");
+                
+                //grafica para hoy
+                var chart1 = c3.generate({
+                    data: {
+                        columns: [
+                        <?php
+                            //optener rango de fechas por semana
+                            $actual = date("Y-m-d H:i:s");
+                            $pasadoAux = date("Y-m-d");
+                            $pasado = $pasadoAux.' 00:00:00';
+                            $consult = mysqli_query($link,"SELECT * FROM rules WHERE rules.activo_rule = 1");
+                            //optener el total de reglas
+                            $total = mysqli_num_rows($consult);
+                            $i = 1;
+                            $total_bloqueos_other = 0;
+                            while($rows = mysqli_fetch_array($consult))
+                            {
+                                $total_bloqueos = 0;
+                                $i++;
+                                $id_rule = $rows['id_rule'];
+                                //optener totales de bloqueos por reglas
+                                $consult2 = mysqli_query($link,"SELECT * FROM bloqueo 
+                                                            INNER JOIN detalle_rule 
+                                                            ON bloqueo.idN = detalle_rule.numero_rule_detalle 
+                                                            INNER JOIN rules 
+                                                            ON detalle_rule.id_rule = rules.id_rule 
+                                                            WHERE bloqueo.activo_bloqueo = 1 
+                                                            AND bloqueo.fecha_bloqueo BETWEEN '$pasado' AND '$actual'
+                                                            AND rules.id_rule = '$id_rule'");
+                                $total_bloqueos = mysqli_num_rows($consult2);
+
+                                if($rows['inicio_rule'] == 0){
+                                    //optener el total
+                                    $total_bloqueos_other += $total_bloqueos;
+                                } else {
+                                    echo '["'.$rows['nombre_rule'].'", '.$total_bloqueos.' ],';
+                                }
+                            }
+                            //para los otros tipos de ataques
+                            echo '["Otras Reglas", '.$total_bloqueos_other.' ]';
+                            ?>
+                        ],
+                        type : 'donut',
+                        onclick: function (d, i) { 
+                            //alert(d.id);
+                            if(d.id === 'Otras Reglas'){
+                                //setTimeout("location.href = 'other_tipo_bloqueo.php?tipo!="+d.id+"'",100);
+                            } else {
+                                //setTimeout("location.href = 'tipo_bloqueo.php?tipo!="+d.id+"&fecha1!=<?php echo $pasado; ?>&fecha2!=<?php echo $actual; ?>'",100);
+                            }
+                        },
+                    },
+                    donut: {
+                        title: "HOY",
+                        label: {
+                            format: function (value, ratio, id) {
+                                return d3.format(',')(value);
+                            }
+                        }
+                    },
+                    tooltip: {
+                        grouped: false,
+                        format: {
+                            value: function (value, ratio, id) {
+                                return d3.format(',')(value);
+                            }
+                        }
+                    },
+                    legend: {
+                        show: true
+                    },
+                });
+                $("#chart1").html(chart1.element);
+
+                //grafica de ultima semana
+                var chart2 = c3.generate({
+                    data: {
+                        columns: [
+                        <?php
+                            //optener rango de fechas por semana
+                            $hoy = date("Y-m-d H:i:s");
+                            $semana = date("Y-m-d H:i:s",strtotime($hoy."- 1 week"));
+                            $consult = mysqli_query($link,"SELECT * FROM rules WHERE rules.activo_rule = 1");
+                            //optener el total de reglas
+                            $total = mysqli_num_rows($consult);
+                            $i = 1;
+                            $total_bloqueos_other = 0;
+                            while($rows = mysqli_fetch_array($consult))
+                            {
+                                $total_bloqueos = 0;
+                                $i++;
+                                $id_rule = $rows['id_rule'];
+                                //optener totales de bloqueos por reglas
+                                $consult2 = mysqli_query($link,"SELECT * FROM bloqueo 
+                                                            INNER JOIN detalle_rule 
+                                                            ON bloqueo.idN = detalle_rule.numero_rule_detalle 
+                                                            INNER JOIN rules 
+                                                            ON detalle_rule.id_rule = rules.id_rule 
+                                                            WHERE bloqueo.activo_bloqueo = 1
+                                                            AND bloqueo.fecha_bloqueo BETWEEN '$semana' AND '$hoy'
+                                                            AND rules.id_rule = '$id_rule'");
+                                $total_bloqueos = mysqli_num_rows($consult2);
+                            
+                                if($rows['inicio_rule'] == 0){
+                                    //optener el total
+                                    $total_bloqueos_other += $total_bloqueos;
+                                } else {
+                                    echo '["'.$rows['nombre_rule'].'", '.$total_bloqueos.' ],';
+                                }
+                            }
+                            //para los otros tipos de ataques
+                            echo '["Otras Reglas", '.$total_bloqueos_other.' ]';
+                            ?>
+                        ],
+                        type : 'donut',
+                        onclick: function (d, i) { 
+                            //alert(d.id);
+                            if(d.id === 'Otras Reglas'){
+                                //setTimeout("location.href = 'other_tipo_bloqueo.php?tipo!="+d.id+"'",100);
+                            } else {
+                                //setTimeout("location.href = 'tipo_bloqueo.php?tipo!="+d.id+"&fecha1!=<?php echo $semana; ?>&fecha2!=<?php echo $hoy; ?>'",100);
+                            }
+                        },
+                    },
+                    donut: {
+                        title: "Ultima Semana",
+                        label: {
+                            format: function (value, ratio, id) {
+                                return d3.format(',')(value);
+                            }
+                        }
+                    },
+                    tooltip: {
+                        grouped: false,
+                        format: {
+                            value: function (value, ratio, id) {
+                                return d3.format(',')(value);
+                            }
+                        }
+                    },
+                    legend: {
+                        show: true
+                    },
+                });
+                $("#chart2").html(chart2.element);
+
+                //grafica de ultimo mes
+                var chart3 = c3.generate({
+                    data: {
+                        columns: [
+                        <?php
+                            //optener rango de fechas por mes
+                            $meshoy = date("Y-m-d H:i:s");
+                            $mes = date("Y-m-d H:i:s",strtotime($hoy."- 1 month"));
+                            $consult = mysqli_query($link,"SELECT * FROM rules WHERE rules.activo_rule = 1");
+                            //optener el total de reglas
+                            $total = mysqli_num_rows($consult);
+                            $i = 1;
+                            $total_bloqueos_other = 0;
+                            while($rows = mysqli_fetch_array($consult))
+                            {
+                                $total_bloqueos = 0;
+                                $i++;
+                                $id_rule = $rows['id_rule'];
+                                //optener totales de bloqueos por reglas
+                                $consult2 = mysqli_query($link,"SELECT * FROM bloqueo 
+                                                            INNER JOIN detalle_rule 
+                                                            ON bloqueo.idN = detalle_rule.numero_rule_detalle 
+                                                            INNER JOIN rules 
+                                                            ON detalle_rule.id_rule = rules.id_rule 
+                                                            WHERE bloqueo.activo_bloqueo = 1 
+                                                            AND bloqueo.fecha_bloqueo BETWEEN '$mes' AND '$meshoy'
+                                                            AND rules.id_rule = '$id_rule'");
+                                $total_bloqueos = mysqli_num_rows($consult2);
+                            
+                                if($rows['inicio_rule'] == 0){
+                                    //optener el total
+                                    $total_bloqueos_other += $total_bloqueos;
+                                } else {
+                                    echo '["'.$rows['nombre_rule'].'", '.$total_bloqueos.' ],';
+                                }
+                            }
+                            //para los otros tipos de ataques
+                            echo '["Otras Reglas", '.$total_bloqueos_other.' ]';
+                            ?>
+                        ],
+                        type : 'donut',
+                        onclick: function (d, i) { 
+                            //alert(d.id);
+                            if(d.id === 'Otras Reglas'){
+                                //setTimeout("location.href = 'other_tipo_bloqueo.php?tipo!="+d.id+"'",100);
+                            } else {
+                                //setTimeout("location.href = 'tipo_bloqueo.php?tipo!="+d.id+"&fecha1!=<?php echo $mes; ?>&fecha2!=<?php echo $meshoy; ?>'",100);
+                            }
+                        },
+                    },
+                    donut: {
+                        title: "Ultimo Mes",
+                        label: {
+                            format: function (value, ratio, id) {
+                                return d3.format(',')(value);
+                            }
+                        }
+                    },
+                    tooltip: {
+                        grouped: false,
+                        format: {
+                            value: function (value, ratio, id) {
+                                return d3.format(',')(value);
+                            }
+                        }
+                    },
+                    legend: {
+                        show: true
+                    },
+                });
+                $("#chart3").html(chart3.element);
+            });
+        </script>
+
+        <!-- <script src="js/highcharts.js"></script>
+        <script src="js/exporting.js"></script>
+        <script src="js/export-data.js"></script> -->
+
+        <script src="https://code.highcharts.com/maps/highmaps.js"></script>
+        <script src="https://code.highcharts.com/maps/modules/data.js"></script>
+        <script src="https://code.highcharts.com/maps/modules/exporting.js"></script>
+        <script src="https://code.highcharts.com/maps/modules/offline-exporting.js"></script>
+        <script src="https://code.highcharts.com/mapdata/custom/world.js"></script>
+
+        <!-- grafica de barra de dominios -->
+        <script type="text/javascript">
+            $(document).on('click','#graficoDominio',function() {
+                Highcharts.chart('containerBar', {
+
+                chart: {
+                    type: 'column'
+                },
+
+                title: {
+                    text: 'Ataques por dominios'
+                },
+
+                subtitle: {
+                    text: 'Dominios'
+                },
+
+                xAxis: {
+                    categories: [
+                    <?php
+                        $consult = mysqli_query($link,"SELECT DISTINCT server FROM bloqueo");
+                        while($row = mysqli_fetch_array($consult)){
+                            $nombre_dominio = addslashes($row['server']);
+                            //obtener si termina en doble comilla
+                            $caracter = substr(trim($row['server']), -1); 
+                            if ($caracter != '"') 
+                            {
+                                echo '"'.$nombre_dominio.'",';
+                            }
+                        }
+                    ?>
+                    ],
+                    title: {
+                        text: 'Dominios'
+                    }
+                },
+
+                yAxis: {
+                    title: {
+                        text: 'Total ataques'
+                    },
+                },
+
+                tooltip: {
+                    pointFormat: 'Total ataques: <b>{point.y:.0f}</b>'
+                },
+
+                series: [
+                  <?php
+                    $consult = mysqli_query($link,"SELECT DISTINCT server FROM bloqueo");
+                    $total_dominios = mysqli_num_rows($consult);
+                    $position = 1;
+                    while($row = mysqli_fetch_array($consult)){
+                        $total_bloqueo_dominio = 0;
+                        $nombre_dominio = addslashes($row['server']);
+                        $caracter = substr(trim($row['server']), -1); 
+                        if ($caracter != '"') 
+                        {
+                         
+                            $consultDos = mysqli_query($link,"SELECT * FROM bloqueo WHERE bloqueo.server = '$nombre_dominio'");
+                            $total_bloqueo_dominio = mysqli_num_rows($consultDos);
+
+                             echo '{ name: "'.$nombre_dominio.'",';
+                             echo 'data: [';
+
+                             for($i = 1; $i <= $total_dominios; $i++){
+                                if ($i != $position) {
+                                    echo 'null,';
+                                } else {
+                                    echo $total_bloqueo_dominio.',';
+                                }
+                             }
+                             echo '] },';
+
+                             $position++;
+                        }
+                    }
+                  ?>
+                ]
+
+                });
+            });
+        </script>
+
+        <!-- grafica de ataques por paises -->
+        <script>
+            $(document).ready(function(){
+                $(document).on('click', '#graficoP', function(e){
+                    e.preventDefault();
+                    var line = new Morris.Line({
+                        element          : 'line-chart3',
+                        resize           : true,
+                        data             : [
+                         <?php
+                            $consult = mysqli_query($link,"SELECT * FROM grafica_bloqueo");
+                            
+                            while($rows = mysqli_fetch_array($consult))
+                            {
+                                $fecha_bloqueo = $rows['fecha_bloqueo'];
+                                $total_bloqueo = $rows['total_bloqueo'];
+
+                                echo '{ y: "'.$fecha_bloqueo.'", item1: '.$total_bloqueo.'},';
+                            }
+                        ?>
+                        ],
+                        xkey             : 'y',
+                        ykeys            : ['item1'],
+                        labels           : ['Total Ataques'],
+                        lineColors       : ['#0a63a4'],
+                        lineWidth        : 2,
+                        hideHover        : 'auto',
+                        gridTextColor    : "#888888",
+                        gridStrokeWidth  : 0.4,
+                        pointSize        : 4,
+                        pointStrokeColors: ['#0a63a4'],
+                        gridLineColor    : "#888888",
+                        gridTextFamily   : 'Open Sans',
+                        gridTextSize     : 10
+                    });
+                });
+            });
+        </script>
+
+        <!-- botoneria de seleccion -->
+        <script type="text/javascript">
+            $(document).on('change','#dropdown2',function() {
+                var opc = $("#dropdown2").val();
+
+                if (opc == 'tipo1') {
+                    $('#container3').show();
+                    $('#container4').hide();
+                } else {
+                    $('#container3').hide();
+                    $('#container4').show();
+                }
+            });
+        </script>
+        
+        <!-- grafica de ataque ultima semana  1-->
+        <script>
+            $(document).on('click','#graficoP',function() {
+                Highcharts.chart('container3', {
+                      chart: {
+                        plotBackgroundColor: null,
+                        plotBorderWidth: null,
+                        plotShadow: false,
+                        type: 'pie'
+                      },
+                      title: {
+                        text: 'Grafico de tipos de ataques'
+                      },
+                      tooltip: {
+                        pointFormat: '{series.name}: <b>{point.y:.0f}</b>'
+                      },
+                      plotOptions: {
+                        pie: {
+                          allowPointSelect: true,
+                          cursor: 'pointer',
+                          dataLabels: {
+                            enabled: true,
+                            format: '<b>{point.name}</b>: {point.y:.0f}',
+                            style: {
+                              color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                            }
+                          }
+                        }
+                      },
+                      series: [{
+                        name: '',
+                        colorByPoint: true,
+                        point:{
+                            events:{
+                                click: function (event) {
+                                    //alert(this.name);
+                                    //setTimeout("location.href = 'bloqueo_pais.php?pais!="+this.name+"'",100);
+                                    //setTimeout("location.href = 'tipo_bloqueo.php?tipo!="+this.name+"&fecha1!=<?php echo ''; ?>&fecha2!=<?php echo ''; ?>'",100);
+                                }
+                            }
+                        },
+                        data: [
+                        <?php
+                            $consult = mysqli_query($link,"SELECT * FROM rules WHERE rules.activo_rule = 1");
+                            //optener el total de reglas
+                            $total = mysqli_num_rows($consult);
+                            $i = 1;
+                            while($rows = mysqli_fetch_array($consult))
+                            {
+                                $total_bloqueos = 0;
+                                $i++;
+                                $id_rule = $rows['id_rule'];
+                                //optener totales de bloqueos por reglas
+                                $consult2 = mysqli_query($link,"SELECT * FROM bloqueo 
+                                                            INNER JOIN detalle_rule 
+                                                            ON bloqueo.idN = detalle_rule.numero_rule_detalle 
+                                                            INNER JOIN rules 
+                                                            ON detalle_rule.id_rule = rules.id_rule 
+                                                            WHERE bloqueo.activo_bloqueo = 1 AND rules.id_rule = '$id_rule'");
+                                $total_bloqueos = mysqli_num_rows($consult2);
+                            
+                                echo '{ name: "'.$rows['nombre_rule'].'", y:'.$total_bloqueos.' },';
+                            }
+                            ?>
+                        ]
+                      }]
+                    });
+            });
+        </script>
+
+        <!-- grafica de ataques ultima semana 2 -->
+        <script>
+            $(document).on('click','#graficoP',function() {
+                Highcharts.chart('container4', {
+                      chart: {
+                        plotBackgroundColor: null,
+                        plotBorderWidth: null,
+                        plotShadow: false,
+                        type: 'pie'
+                      },
+                      title: {
+                        text: 'Grafico de tipos de ataques por pais'
+                      },
+                      tooltip: {
+                        pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+                      },
+                      plotOptions: {
+                        pie: {
+                          allowPointSelect: true,
+                          cursor: 'pointer',
+                          dataLabels: {
+                            enabled: true,
+                            format: '<b>{point.name}</b>: {point.y:.0f}',
+                            style: {
+                              color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                            }
+                          }
+                        }
+                      },
+                      series: [{
+                        name: '',
+                        colorByPoint: true,
+                        data: [
+                        <?php
+                            $consult = mysqli_query($link,"SELECT * FROM bloqueo_pais
+                                                    INNER JOIN paises
+                                                    ON bloqueo_pais.id_pais = paises.id_pais");
+                            
+                            while($rows = mysqli_fetch_array($consult))
+                            {
+                                $nombre_pais = $rows['nombre'];
+                                $total_bloqueos = $rows['total_bloqueo'];
+                                $codigo_p = $rows['iso'];
+                            
+                                if ($total_bloqueos > 0) {
+                                    echo '{ name: "'.$nombre_pais.'", y:'.$total_bloqueos.'},';
+                                }
+                            }
+                        ?>
+                        ]
+                      }]
+                    });
+            });
+        </script>
+
+        <!-- botoneria de seleccion -->
+        <script type="text/javascript">
+            $(document).on('change','#dropdown3',function() {
+                var opc = $("#dropdown3").val();
+
+                if (opc == 'tipo3') {
+                    $('#container5').show();
+                    $('#container6').hide();
+                } else {
+                    $('#container5').hide();
+                    $('#container6').show();
+                }
+            });
+        </script>
+
+        <!-- rango de fechas -->
+        <script>
+            $(function () {
+                //Date range picker
+                $('#reservation').daterangepicker({},
+                    function(start, end, label) {
+                        //alert("A new date selection was made: " + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'));
+                        var fecha1 = start.format('YYYY-MM-DD h:mm:ss');
+                        var fecha2 = end.format('YYYY-MM-DD h:mm:ss');
+                        $('#ccontainer5').html('');  
+                        var parametro = {
+                            "fecha1" : fecha1,
+                            "fecha2" : fecha2
+                        }
+                        $.ajax({
+                            url:  'controller/new_grafica.php', 
+                            type: 'POST',
+                            data: parametro,
+                            dataType: 'html'
+                        })
+                        .done(function(data){  
+                            $('#container5').html('');    
+                            $('#container5').html(data); // mostrar la data
+                        })
+                        .fail(function(){
+                            $('#container5').html('');
+                        });
+                    });
+            })
+        </script>
+
+        <!-- rango de fechas Grafica Uno-->
+        <script>
+            $(function () {
+                //Date range picker
+                $('#rangoGraficaUno').daterangepicker({},
+                    function(start, end, label) {
+                        //alert("A new date selection was made: " + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'));
+                        var fecha1 = start.format('YYYY-MM-DD h:mm:ss');
+                        var fecha2 = end.format('YYYY-MM-DD h:mm:ss');
+                        $('#line-chart').html('');  
+                        var parametro = {
+                            "fecha1" : fecha1,
+                            "fecha2" : fecha2
+                        }
+                        $.ajax({
+                            url:  'controller/new_grafica_uno.php', 
+                            type: 'POST',
+                            data: parametro,
+                            dataType: 'html'
+                        })
+                        .done(function(data){  
+                            $('#line-chart').html('');    
+                            $('#line-chart').html(data); // mostrar la data
+                        })
+                        .fail(function(){
+                            $('#line-chart').html('');
+                        });
+                    });
+            })
+        </script>
+
+        <!-- rango de fechas Grafica Dos-->
+        <script>
+            $(function () {
+                //Date range picker
+                $('#rangoGraficaDos').daterangepicker({},
+                    function(start, end, label) {
+                        //alert("A new date selection was made: " + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'));
+                        var fecha1 = start.format('YYYY-MM-DD h:mm:ss');
+                        var fecha2 = end.format('YYYY-MM-DD h:mm:ss');
+                        $('#line-chart2').html('');  
+                        var parametro = {
+                            "fecha1" : fecha1,
+                            "fecha2" : fecha2
+                        }
+                        $.ajax({
+                            url:  'controller/new_grafica_dos.php', 
+                            type: 'POST',
+                            data: parametro,
+                            dataType: 'html'
+                        })
+                        .done(function(data){  
+                            $('#line-chart2').html('');    
+                            $('#line-chart2').html(data); // mostrar la data
+                        })
+                        .fail(function(){
+                            $('#line-chart2').html('');
+                        });
+                    });
+            })
+        </script>
+
+        <!-- rango de fechas Grafica Tres-->
+        <script>
+            $(function () {
+                //Date range picker
+                $('#rangoGraficaTres').daterangepicker({},
+                    function(start, end, label) {
+                        //alert("A new date selection was made: " + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'));
+                        var fecha1 = start.format('YYYY-MM-DD h:mm:ss');
+                        var fecha2 = end.format('YYYY-MM-DD h:mm:ss');
+                        //alert(fecha1+' '+fecha2);
+                        $('#listaPaises').html('');
+                        var parametro = {
+                            "fecha1" : fecha1,
+                            "fecha2" : fecha2
+                        }
+                        $.ajax({
+                            url:  'controller/new_grafica_ataque_pais.php', 
+                            type: 'POST',
+                            data: parametro,
+                            dataType: 'html'
+                        })
+                        .done(function(data){  
+                            $('#listaPaises').html('');    
+                            $('#listaPaises').html(data); // mostrar la data
+                        })
+                        .fail(function(){
+                            $('#listaPaises').html('');
+                        });
+                    });
+            })
+        </script>
+
+        <!-- rango de fechas Grafica Cuatro-->
+        <script>
+            $(function () {
+                //Date range picker
+                $('#rangoGraficaCuatro').daterangepicker({},
+                    function(start, end, label) {
+                        //alert("A new date selection was made: " + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'));
+                        var fecha1 = start.format('YYYY-MM-DD h:mm:ss');
+                        var fecha2 = end.format('YYYY-MM-DD h:mm:ss');
+                        //alert(fecha1+' '+fecha2);
+                        $('#containerBar').html('');
+                        var parametro = {
+                            "fecha1" : fecha1,
+                            "fecha2" : fecha2
+                        }
+                        $.ajax({
+                            url:  'controller/new_grafica_dominios.php', 
+                            type: 'POST',
+                            data: parametro,
+                            dataType: 'html'
+                        })
+                        .done(function(data){  
+                            $('#containerBar').html('');    
+                            $('#containerBar').html(data); // mostrar la data
+                        })
+                        .fail(function(){
+                            $('#containerBar').html('');
+                        });
+                    });
+            })
+        </script>
+
+        <!-- rango de fechas Grafica visitas-->
+        <script>
+            $(function () {
+                //Date range picker
+                $('#rangoGraficaVisita').daterangepicker({},
+                    function(start, end, label) {
+                        //alert("A new date selection was made: " + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'));
+                        var fecha1 = start.format('YYYY-MM-DD h:mm:ss');
+                        var fecha2 = end.format('YYYY-MM-DD h:mm:ss');
+                        $('#line-chart4').html('');  
+                        var parametro = {
+                            "fecha1" : fecha1,
+                            "fecha2" : fecha2
+                        }
+                        $.ajax({
+                            url:  'controller/new_grafica_visita.php', 
+                            type: 'POST',
+                            data: parametro,
+                            dataType: 'html'
+                        })
+                        .done(function(data){  
+                            $('#line-chart4').html('');    
+                            $('#line-chart4').html(data); // mostrar la data
+                        })
+                        .fail(function(){
+                            $('#line-chart4').html('');
+                        });
+                    });
+            })
+        </script>
+
+        <!-- grafica de ataques ultimo mes 1 -->
+        <script>
+            $(document).on('click','#graficoMes',function() {
+                Highcharts.chart('container5', {
+                      chart: {
+                        plotBackgroundColor: null,
+                        plotBorderWidth: null,
+                        plotShadow: false,
+                        type: 'pie'
+                      },
+                      title: {
+                        text: 'Grafico de tipos de ataques'
+                      },
+                      tooltip: {
+                        pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+                      },
+                      plotOptions: {
+                        pie: {
+                          allowPointSelect: true,
+                          cursor: 'pointer',
+                          dataLabels: {
+                            enabled: true,
+                            format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+                            style: {
+                              color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                            }
+                          }
+                        }
+                      },
+                      series: [{
+                        name: '',
+                        colorByPoint: true,
+                        data: [
+                        <?php
+                            $consult = mysqli_query($link,"SELECT * FROM rules WHERE rules.activo_rule = 1");
+                            //optener el total de reglas
+                            $total = mysqli_num_rows($consult);
+                            $i = 1;
+                            while($rows = mysqli_fetch_array($consult))
+                            {
+                                $total_bloqueos = 0;
+                                $i++;
+                                $id_rule = $rows['id_rule'];
+                                //optener totales de bloqueos por reglas
+                                $consult2 = mysqli_query($link,"SELECT * FROM bloqueo 
+                                                            INNER JOIN detalle_rule 
+                                                            ON bloqueo.idN = detalle_rule.numero_rule_detalle 
+                                                            INNER JOIN rules 
+                                                            ON detalle_rule.id_rule = rules.id_rule 
+                                                            WHERE bloqueo.activo_bloqueo = 1 AND rules.id_rule = '$id_rule'");
+                                $total_bloqueos = mysqli_num_rows($consult2);
+                            
+                                echo '{ name: "'.$rows['nombre_rule'].'", y:'.$total_bloqueos.' },';
+                            }
+                            ?>
+                        ]
+                      }]
+                    });
+            });
+        </script>
+
+        <!-- grafica de ataques ultimo mes 2 -->
+        <script>
+            $(document).on('click','#graficoMes',function() {
+                Highcharts.chart('container6', {
+                      chart: {
+                        plotBackgroundColor: null,
+                        plotBorderWidth: null,
+                        plotShadow: false,
+                        type: 'pie'
+                      },
+                      title: {
+                        text: 'Grafico de tipos de ataques por pais'
+                      },
+                      tooltip: {
+                        pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+                      },
+                      plotOptions: {
+                        pie: {
+                          allowPointSelect: true,
+                          cursor: 'pointer',
+                          dataLabels: {
+                            enabled: true,
+                            format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+                            style: {
+                              color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                            }
+                          }
+                        }
+                      },
+                      series: [{
+                        name: '',
+                        colorByPoint: true,
+                        data: [
+                        <?php
+                            $consult = mysqli_query($link,"SELECT * FROM bloqueo_pais
+                                                    INNER JOIN paises
+                                                    ON bloqueo_pais.id_pais = paises.id_pais");
+                            
+                            while($rows = mysqli_fetch_array($consult))
+                            {
+                                $nombre_pais = $rows['nombre'];
+                                $total_bloqueos = $rows['total_bloqueo'];
+                                $codigo_p = $rows['iso'];
+                            
+                                if ($total_bloqueos > 0) {
+                                    echo '{ name: "'.$nombre_pais.'", y:'.$total_bloqueos.'},';
+                                }
+                            }
+                        ?>
+                        ]
+                      }]
+                    });
+            });
+        </script>
+
+        <!-- grafica de line a de tiempo de visitas -->
+        <script>
+            $(document).ready(function(){
+                $(document).on('click', '#graficoVisita', function(e){
+                    e.preventDefault();
+                    
+                    //grafica de linea de tiempo
+                    var line = new Morris.Line({
+                        element          : 'line-chart4',
+                        resize           : true,
+                        data: [
+                        <?php
+                            $consult = mysqli_query($link,"SELECT * FROM grafica_visitas_dominio");
+                                
+                            while($rows = mysqli_fetch_array($consult))
+                            {
+                                $fecha_visita = $rows['fecha_visita'];
+                                $totalPorFechaVisita = $rows['total_visita'];
+
+                                echo '{ y: "'.$fecha_visita.'", item1: '.$totalPorFechaVisita.'},';
+                            }
+                        ?>
+                        ],
+                        xkey: 'y',
+                        ykeys: ['item1'],
+                        labels: ['Total visitas'],
+                        lineColors: ['#0a63a4'],
+                        lineWidth: 2,
+                        hideHover: 'auto',
+                        gridTextColor: "#888888",
+                        gridStrokeWidth: 0.4,
+                        pointSize: 4,
+                        pointStrokeColors: ["#0a63a4"],
+                        gridLineColor: "#888888",
+                        gridTextFamily: "Open Sans",
+                        gridTextSize: 10
+                    });
+                });
+            });
+        </script>
+
+        <!-- grafica de barra de visita por dominios -->
+        <script type="text/javascript">
+            $(document).on('click','#graficoVisita',function() {
+                Highcharts.chart('containerBarDominio', {
+
+                chart: {
+                    type: 'column'
+                },
+
+                title: {
+                    text: 'Visitas por dominio'
+                },
+
+                subtitle: {
+                    text: 'Dominios'
+                },
+
+                xAxis: {
+                    categories: [
+                    <?php
+                        $consult = mysqli_query($link,"SELECT dominio, SUM(total_visita) as total 
+                        FROM grafica_visitas 
+                        WHERE dominio = '$nombre_host'
+                        GROUP BY dominio");
+                        while($row = mysqli_fetch_array($consult)){
+                            $nombre_dominio = addslashes($row['dominio']);
+                            echo '"'.$nombre_dominio.'",';
+                        }
+                    ?>
+                    ],
+                    title: {
+                        text: 'Dominios'
+                    }
+                },
+
+                yAxis: {
+                    title: {
+                        text: 'Total visitas'
+                    },
+                },
+
+                tooltip: {
+                    pointFormat: 'Total visitas: <b>{point.y:.0f}</b>'
+                },
+
+                series: [
+                    <?php
+                        $consult = mysqli_query($link,"SELECT dominio, SUM(total_visita) as total 
+                        FROM grafica_visitas 
+                        WHERE dominio = '$nombre_host'
+                        GROUP BY dominio");
+                        $total_visita_dominio = mysqli_num_rows($consult);
+                        $position = 1;
+                        while($row = mysqli_fetch_array($consult))
+                        {
+                            $nombre_dominio = addslashes($row['dominio']);
+                            $total_visita = $row['total'];
+
+                            echo '{ name: "'.$nombre_dominio.'",';
+                            echo 'data: [';
+                            for($i = 1; $i <= $total_visita_dominio; $i++){
+                                if ($i != $position) {
+                                    echo 'null,';
+                                } else {
+                                    echo $total_visita.',';
+                                }
+                            }
+                            echo '] },';
+
+                            $position++;
+                        }
+                  ?>
+                ]
+
+                });
+            });
+        </script>
+
+        <!-- rango de fechas Grafica de visita por paises-->
+        <script>
+            function GraficaDominio(fecha1, fecha2) {
+                // alert(fecha1+' - '+fecha2);
+                $('#containerBarDominio').html('');
+                var parametro = {
+                    "fecha1" : fecha1,
+                    "fecha2" : fecha2
+                }
+                $.ajax({
+                    url:  'controller/new_grafica_visita_dominio.php', 
+                    type: 'POST',
+                    data: parametro,
+                    dataType: 'html'
+                })
+                .done(function(data){  
+                    $('#containerBarDominio').html('');    
+                    $('#containerBarDominio').html(data); // mostrar la data
+                })
+                .fail(function(){
+                    $('#containerBarDominio').html('');
+                });
+            }
+        </script>
+
+        <!-- tabla visitas -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                $('#example4').DataTable({
+                     "order": [[1, 'desc']],
+                     "processing": true,
+                     "serverSide": true,
+                     "ajax": "ajax_table/ajax_table_visitas2.php?busqueda!=<?php echo $nombre_host; ?>",
+                     "createdRow": function ( row, data, index ) {
+                        //
+                        if (data[1]) {
+                            $('td', row).eq(1).append('<i class="fa fa-clock-o icono-relog"></i>');
+                        }
+
+                        //
+                        if (data[2]) {
+                            $('td', row).eq(2).append('<span class="f16"><i class="flag ac icono-bandera"></i></span>');
+                            //optener la bandera del pais
+                            var ip = data[2];
+                            var parametro = {
+                                "ip_bandera" : ip
+                            }
+                            $.ajax({
+                                url:  'controller/return_badera.php', 
+                                type: 'POST',
+                                data: parametro,
+                                dataType: 'html'
+                            })
+                            .done(function(result){
+                                $('td', row).eq(2).html('');
+                                $('td', row).eq(2).html(result+' '+data[2]);
+                            })
+                            .fail(function(){
+                                $('td', row).eq(2).append('<span class="f16"><i class="flag ac icono-bandera"></i></span>');
+                            });
+                        }
+                    }
+                });
+
+                var table4 = $('#example4').DataTable();
+                $('#dropdown4').on('change',function(){
+                    table4.columns(3).search(this.value).draw();
+
+                    //actualizar campos de graficas
+                    var dominio = this.value;
+                    $("#overlayGraficaVisita").css("display", "block");
+                    //alert('hola');
+                    $('#nombredominio').val(dominio);
+                    $('#estadisticaRango').html('');
+                    var parametro = {
+                        "fecha1" : "",
+                        "fecha2" : "",
+                        "nombredominio" : dominio
+                    }
+                    $.ajax({
+                        url:  'controller/new_grafica_visita.php', 
+                        type: 'POST',
+                        data: parametro,
+                        dataType: 'html'
+                    })
+                    .done(function(data){  
+                        $('#estadisticaRango').html('');    
+                        $('#estadisticaRango').html(data); // mostrar la data
+                        $("#overlayGraficaVisita").css("display", "none");
+                    })
+                    .fail(function(){
+                        $('#estadisticaRango').html('');
+                        $("#overlayGraficaVisita").css("display", "none");
+                    });
+                });
+                  
+            });
+        </script>
+
+        <!-- actualizar dato de sitio -->
+        <script type="text/javascript">
+            $(document).ready(function(){
+                //primer paso
+                $(document).on('click', '.btn4', function(e){
+                    e.preventDefault();
+                    var id_sitio = $(this).data('id');
+                    $('#modalUpdateSitio').modal('show');
+                    $('#content_dynamic_sitio').html('');
+                    $.ajax({
+                        url: 'controller/get_sitio_update.php',
+                        type: 'POST',
+                        data: 'id_sitio='+id_sitio,
+                        dataType: 'html'
+                    })
+                    .done(function(data){  
+                        $('#content_dynamic_sitio').html('');    
+                        $('#content_dynamic_sitio').html(data); // mostrar la data
+                    })
+                    .fail(function(){
+                        $('#content_dynamic_sitio').html('<i class="glyphicon glyphicon-info-sign"></i> Something went wrong, Please try again...');
+                    });
+                });
+
+                // segundo paso
+                $(document).on('click', '#btnUpdateSitio', function(e){
+                    e.preventDefault();
+                    $.ajax({
+                        type: 'POST',
+                        url: 'controller/update_sitio.php',
+                        data: $('.FormSitioUpdate').serialize(),
+                        success: function(data) {
+                            if (data == 'bien') {
+                                //alert(data);
+                                not3();
+                                setTimeout("location.href = 'inicio.php'",3000);
+                            } else {
+                                //alert(data);
+                                not2();
+                            }
+                        }
+                    });      
+                });
+            });
+        </script>
+
+    </body>
+</html>

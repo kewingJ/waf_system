@@ -1,0 +1,60 @@
+<?php
+require("../../includes/config.php");
+require('../../geoIp/geoiploc.php');
+
+//optener la data de mysql
+$consult = mysqli_query($link,"SELECT * FROM bloqueo_ip ORDER BY id_bloqueo_ip DESC LIMIT 100");
+$j = 0;
+while ($row = mysqli_fetch_array($consult)) {
+    //antes de cualquier operacion verificar los datos a optener
+    $ip_ataque = $row["ip_bloqueada"];
+    if (filter_var($ip_ataque, FILTER_VALIDATE_IP)) {
+        $nombrePais = '';
+        $codigo_pais = '';
+        $bandera = '';
+        
+        //
+        $server_aux = $row["tipo_ataque_ip"];
+        $server = recortar_texto($server_aux, 14);
+        //optener el nombre del pais del ataque
+        $ip_ataque = $row["ip_bloqueada"];
+        $codigo_ip = getCountryFromIP($ip_ataque, "code");
+
+        if (strtolower($codigo_ip) == "zz") {
+            $codigo_ip = "NI";
+        }
+
+        //optener la url de la bandera del pais
+        $bandera = "https://flagcdn.com/24x18/".strtolower($codigo_ip).".png";
+
+        //
+        // $consultPais = mysqli_query($link,"SELECT * FROM paises WHERE iso = '$codigo_ip'");
+        // $rowPais = mysqli_fetch_array($consultPais);
+        // $nombrePais = $rowPais['nombre'];
+        // $codigo_pais = $rowPais['iso'];
+
+        //formato de fecha
+        $myDateTime = DateTime::createFromFormat('Y-m-d H:i:s', $row['fecha_bloqueo_ip']);
+        $formatmyDateTime = $myDateTime->format('d/m/Y');
+
+        $arr_waf[$j] = array('pais'=>$nombrePais,
+                            'codigo_pais'=>$codigo_ip,
+                            'url_bandera'=>$bandera,
+                            'server'=>$server,
+                            'ip_bloqueo'=> $ip_ataque,
+                            'fecha_bloqueo'=> $formatmyDateTime);
+        $j++;
+    }
+}
+die(json_encode($arr_waf)); 
+
+function recortar_texto($texto, $maxcaracteres){
+    if(!empty($texto)){
+        $texto = trim($texto);
+        if(strlen($texto) > $maxcaracteres){
+            $texto = substr($texto, 0, ($maxcaracteres - 3)).'...';
+        }
+        return $texto;
+    }
+}
+?>
