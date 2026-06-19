@@ -27,10 +27,16 @@ $tables_to_patch = [
 
 foreach ($tables_to_patch as $table => $after) {
     if (!columnExists($link, $table, 'codigo_pais')) {
-        echo "Añadiendo columna 'codigo_pais' a '$table' ... ";
+        echo "Añadiendo columna 'codigo_pais' a '$table' (Modo Instantáneo) ... ";
+        // MariaDB 10.4+ soporta ADD COLUMN ALGORITHM=INSTANT incluso con AFTER
         $sql = "ALTER TABLE `$table` ADD COLUMN `codigo_pais` CHAR(2) DEFAULT 'ZZ' AFTER `$after`";
         if (mysqli_query($link, $sql)) echo "OK" . PHP_EOL;
-        else echo "ERROR: " . mysqli_error($link) . PHP_EOL;
+        else {
+            echo "ERROR: " . mysqli_error($link) . ". Reintentando con algoritmo INPLACE... ";
+            $sql = "ALTER TABLE `$table` ADD COLUMN `codigo_pais` CHAR(2) DEFAULT 'ZZ' AFTER `$after`, ALGORITHM=INPLACE, LOCK=NONE";
+            if (mysqli_query($link, $sql)) echo "OK" . PHP_EOL;
+            else echo "ERROR FINAL: " . mysqli_error($link) . PHP_EOL;
+        }
     } else {
         echo "Columna 'codigo_pais' ya existe en '$table'." . PHP_EOL;
     }
@@ -48,7 +54,8 @@ mysqli_query($link, "
 
 if (!indexExists($link, 'visita_dominio_group', 'uk_group_ip_visita')) {
     echo "Añadiendo UNIQUE KEY a 'visita_dominio_group' ... ";
-    if (mysqli_query($link, "ALTER TABLE visita_dominio_group ADD UNIQUE KEY `uk_group_ip_visita` (ip_visita)")) {
+    // En MariaDB ALTER TABLE usa comas para separar especificaciones
+    if (mysqli_query($link, "ALTER TABLE visita_dominio_group ADD UNIQUE KEY `uk_group_ip_visita` (ip_visita), ALGORITHM=INPLACE, LOCK=NONE")) {
         echo "OK" . PHP_EOL;
     } else {
         echo "ERROR: " . mysqli_error($link) . PHP_EOL;
@@ -68,8 +75,10 @@ $indices = [
 foreach ($indices as $idx) {
     list($table, $name, $cols) = $idx;
     if (!indexExists($link, $table, $name)) {
-        echo "Creando índice '$name' en '$table' ... ";
-        if (mysqli_query($link, "CREATE INDEX `$name` ON `$table` $cols")) {
+        echo "Creando índice '$name' en '$table' (Operación en segundo plano) ... ";
+        // Usamos ALTER TABLE con comas para separar especificaciones (requerido en MariaDB)
+        $sql = "ALTER TABLE `$table` ADD INDEX `$name` $cols, ALGORITHM=INPLACE, LOCK=NONE";
+        if (mysqli_query($link, $sql)) {
             echo "OK" . PHP_EOL;
         } else {
             echo "ERROR: " . mysqli_error($link) . PHP_EOL;
