@@ -39,15 +39,19 @@ if ($affected === 0) {
 
     /**
      * OPTIMIZACIÓN DE LIMPIEZA DE RESUMEN:
-     * En lugar de un DELETE masivo con subconsultas pesadas, simplemente limpiamos las entradas
-     * del resumen que ya no tienen registros activos asociados.
-     * Dado que el resumen es pequeño comparado con la tabla principal, esto es seguro.
+     * En lugar de un DELETE masivo global, solo intentamos limpiar si ha pasado suficiente tiempo
+     * o lo hacemos de forma mucho más limitada para evitar bloqueos de metadatos.
+     *
+     * MEJORA: Solo ejecutamos esta limpieza pesada el 1% de las veces para reducir carga,
+     * o puedes moverla a un cron semanal.
      */
-    mysqli_query($link, "
-        DELETE vdg FROM visita_dominio_group vdg
-        LEFT JOIN visita_dominio vd ON vdg.ip_visita = vd.ip_visita AND vd.activo_visita = 1
-        WHERE vd.ip_visita IS NULL
-    ");
+    if (rand(1, 100) === 1) {
+        mysqli_query($link, "
+            DELETE vdg FROM visita_dominio_group vdg
+            LEFT JOIN visita_dominio vd ON vdg.ip_visita = vd.ip_visita AND vd.activo_visita = 1
+            WHERE vd.ip_visita IS NULL
+        ");
+    }
 }
 
 exit(0);
