@@ -1,5 +1,5 @@
 <?php
-define('DB_SERVER', 'localhost');
+define('DB_SERVER', '127.0.0.1');
 define('DB_USERNAME', 'root');
 define('DB_PASSWORD', '');
 define('DB_DATABASE', 'db_waf');
@@ -14,8 +14,8 @@ $sql_details = array(
     'user' => 'root',
     'pass' => '',
     'db'   => 'db_waf',
-    'host' => 'localhost'
-);     
+    'host' => '127.0.0.1'
+);
 
 // token de api de ipinfo
 $token_ipinfo = 'b4319613b42b76';

@@ -3317,210 +3317,208 @@
                             show: true
                         },
                     });
-                    $("#chart_tipoAtaque").html(chart_tipoAtaque.element);
+                        $("#chart_tipoAtaque").html(chart_tipoAtaque.element);
+                    });
                 });
             });
         </script>
 
         <!-- graficas de ataques del waf y ataque de fuerza bruta -->
         <script>
-        var chartDataSources = null;
+            var chartDataSources = null;
 
-        $(document).ready(function() {
-            // Mostrar spinner de carga
-            $("#chart_rangoAtaques").html('<div style="text-align:center; padding: 50px;"><i class="fa fa-spinner fa-spin fa-3x" style="color:#0173ed"></i><br><br>Cargando gráfica...</div>');
-            
-            $.ajax({
-                url: 'controller/ajax_chart_rango_ataques.php',
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    chartDataSources = {
-                        hoy: [
-                            { label: "WAF", value: response.hoy.waf, color: "#0173ed", icon: "img/grafica/bloqueo_waf.png" },
-                            { label: "Bots", value: response.hoy.bots, color: "#00ccab", icon: "img/grafica/bloqueo_bot.png" },
-                            { label: "Fuerza Bruta", value: response.hoy.fuerza, color: "#ff4a47", icon: "img/grafica/bloqueo_ip.png" }
-                        ],
-                        semana: [
-                            { label: "WAF", value: response.semana.waf, color: "#0173ed", icon: "img/grafica/bloqueo_waf.png" },
-                            { label: "Bots", value: response.semana.bots, color: "#00ccab", icon: "img/grafica/bloqueo_bot.png" },
-                            { label: "Fuerza Bruta", value: response.semana.fuerza, color: "#ff4a47", icon: "img/grafica/bloqueo_ip.png" }
-                        ],
-                        mes: [
-                            { label: "WAF", value: response.mes.waf, color: "#0173ed", icon: "img/grafica/bloqueo_waf.png" },
-                            { label: "Bots", value: response.mes.bots, color: "#00ccab", icon: "img/grafica/bloqueo_bot.png" },
-                            { label: "Fuerza Bruta", value: response.mes.fuerza, color: "#ff4a47", icon: "img/grafica/bloqueo_ip.png" }
-                        ]
-                    };
+            $(document).ready(function() {
+                // Mostrar spinner de carga
+                $("#chart_rangoAtaques").html('<div style="text-align:center; padding: 50px;"><i class="fa fa-spinner fa-spin fa-3x" style="color:#0173ed"></i><br><br>Cargando gráfica...</div>');
+                
+                $.ajax({
+                    url: 'controller/ajax_chart_rango_ataques.php',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        chartDataSources = {
+                            hoy: [
+                                { label: "WAF", value: response.hoy.waf, color: "#0173ed", icon: "img/grafica/bloqueo_waf.png" },
+                                { label: "Bots", value: response.hoy.bots, color: "#00ccab", icon: "img/grafica/bloqueo_bot.png" },
+                                { label: "Fuerza Bruta", value: response.hoy.fuerza, color: "#ff4a47", icon: "img/grafica/bloqueo_ip.png" }
+                            ],
+                            semana: [
+                                { label: "WAF", value: response.semana.waf, color: "#0173ed", icon: "img/grafica/bloqueo_waf.png" },
+                                { label: "Bots", value: response.semana.bots, color: "#00ccab", icon: "img/grafica/bloqueo_bot.png" },
+                                { label: "Fuerza Bruta", value: response.semana.fuerza, color: "#ff4a47", icon: "img/grafica/bloqueo_ip.png" }
+                            ],
+                            mes: [
+                                { label: "WAF", value: response.mes.waf, color: "#0173ed", icon: "img/grafica/bloqueo_waf.png" },
+                                { label: "Bots", value: response.mes.bots, color: "#00ccab", icon: "img/grafica/bloqueo_bot.png" },
+                                { label: "Fuerza Bruta", value: response.mes.fuerza, color: "#ff4a47", icon: "img/grafica/bloqueo_ip.png" }
+                            ]
+                        };
 
-                    // Inicializar botones
-                    $("#rangoAtaquesTabs .btn").off('click').click(function() {
-                        if (!chartDataSources) return;
-                        $("#rangoAtaquesTabs .btn").removeClass("btn-primary").addClass("btn-default");
-                        $(this).removeClass("btn-default").addClass("btn-primary");
+                        // Inicializar botones
+                        $("#rangoAtaquesTabs .btn").off('click').click(function() {
+                            if (!chartDataSources) return;
+                            $("#rangoAtaquesTabs .btn").removeClass("btn-primary").addClass("btn-default");
+                            $(this).removeClass("btn-default").addClass("btn-primary");
+                            
+                            var target = $(this).data("target");
+                            renderCustomD3Chart(target);
+                        });
+
+                        // Renderizar el de "HOY" por defecto
+                        renderCustomD3Chart("hoy");
                         
-                        var target = $(this).data("target");
-                        renderCustomD3Chart(target);
-                    });
-
-                    // Renderizar el de "HOY" por defecto
-                    renderCustomD3Chart("hoy");
-                    
-                    // Re-render en resize
-                    $(window).off('resize.d3chart').on('resize.d3chart', function() {
-                        if (!chartDataSources) return;
-                        var current = $("#rangoAtaquesTabs .btn-primary").data("target");
-                        if (current) renderCustomD3Chart(current);
-                    });
-                },
-                error: function() {
-                    $("#chart_rangoAtaques").html('<div style="text-align:center; padding: 50px; color:red;">Error al cargar datos.</div>');
-                }
-            });
-        });
-
-        function renderCustomD3Chart(range) {
-            var data = chartDataSources[range];
-            var total = d3.sum(data, function(d) { return d.value; });
-            
-            data.forEach(function(d) {
-                d.percentage = total > 0 ? Math.round((d.value / total) * 100) : 0;
+                        // Re-render en resize
+                        $(window).off('resize.d3chart').on('resize.d3chart', function() {
+                            if (!chartDataSources) return;
+                            var current = $("#rangoAtaquesTabs .btn-primary").data("target");
+                            if (current) renderCustomD3Chart(current);
+                        });
+                    },
+                    error: function() {
+                        $("#chart_rangoAtaques").html('<div style="text-align:center; padding: 50px; color:red;">Error al cargar datos.</div>');
+                    }
+                });
             });
 
-            var container = d3.select("#d3_custom_chart_container");
-            container.html(""); // limpiar
-
-            var width = container.node().getBoundingClientRect().width || 900;
-            var height = 500;
-            
-            var isMobile = width < 700;
-            
-            var cx = isMobile ? width / 2 : width * 0.70;
-            var cy = isMobile ? height * 0.65 : height / 2;
-            var radius = isMobile ? width * 0.35 : Math.min(width * 0.45, height) / 2 * 0.8;
-            var innerRadius = radius * 0.35;
-
-            var svg = container.append("svg")
-                .attr("width", "100%")
-                .attr("height", height);
-
-            var pie = d3.pie()
-                .value(function(d) { return d.value; })
-                .sort(null)
-                .padAngle(0.015);
-
-            var arc = d3.arc()
-                .innerRadius(innerRadius)
-                .outerRadius(radius);
-
-            var arcHover = d3.arc()
-                .innerRadius(innerRadius)
-                .outerRadius(radius * 1.05);
-
-            var arcs = pie(data);
-
-            var chartGroup = svg.append("g")
-                .attr("transform", "translate(" + cx + "," + cy + ")");
-
-            // Dibujar Slices
-            chartGroup.selectAll("path")
-                .data(arcs)
-                .enter().append("path")
-                .attr("d", arc)
-                .attr("fill", function(d) { return d.data.color; })
-                .style("cursor", "pointer")
-                .on("mouseover", function(d) {
-                    d3.select(this).transition().duration(200).attr("d", arcHover);
-                })
-                .on("mouseout", function(d) {
-                    d3.select(this).transition().duration(200).attr("d", arc);
-                })
-                .on("click", function(d) {
-                    // Click redirige a ip_bloqueadas
-                    var tipo_id = d.data.label === "WAF" ? "Bloqueos WAF" : (d.data.label === "Bots" ? "Bloqueos Bots" : "Bloqueos Fuerza Bruta");
-                    var r = range === "hoy" ? "HOY" : (range === "semana" ? "SEMANA" : "MES");
-                    location.href = "ip_bloqueadas.php?tipo!=" + tipo_id + "&rango!=" + r;
+            function renderCustomD3Chart(range) {
+                var data = chartDataSources[range];
+                var total = d3.sum(data, function(d) { return d.value; });
+                
+                data.forEach(function(d) {
+                    d.percentage = total > 0 ? Math.round((d.value / total) * 100) : 0;
                 });
 
-            // Iconos en el pastel
-            chartGroup.selectAll("image")
-                .data(arcs)
-                .enter().append("image")
-                .attr("href", function(d) { return d.data.icon; })
-                .attr("width", 32)
-                .attr("height", 32)
-                .attr("x", function(d) { return arc.centroid(d)[0] - 16; })
-                .attr("y", function(d) { return arc.centroid(d)[1] - 16; })
-                .style("filter", "brightness(0) invert(1) drop-shadow(0px 2px 4px rgba(0,0,0,0.5))");
+                var container = d3.select("#d3_custom_chart_container");
+                container.html(""); // limpiar
 
-            // Textos a la izquierda
-            var textX = isMobile ? width * 0.1 : width * 0.15;
-            var startY = isMobile ? 40 : height * 0.25;
-            var spacingY = isMobile ? 60 : height * 0.25;
-
-            var polylineOuterArc = d3.arc()
-                .innerRadius(radius)
-                .outerRadius(radius);
-
-            data.forEach(function(d, i) {
-                var arcData = arcs[i];
-                if(arcData.value === 0) return; // Omitir si no hay datos
+                var width = container.node().getBoundingClientRect().width || 900;
+                var height = 500;
                 
-                var currentY = startY + (i * spacingY);
-                var legendGroup = svg.append("g");
-
-                var textElem = legendGroup.append("text")
-                    .attr("x", textX)
-                    .attr("y", currentY)
-                    .attr("fill", d.color)
-                    .attr("font-size", isMobile ? "20px" : "40px")
-                    .attr("font-family", "Arial, sans-serif")
-                    .attr("font-weight", "bold")
-                    .text(d.label);
-                    
-                var bbox = textElem.node().getBBox();
+                var isMobile = width < 700;
                 
-                legendGroup.append("text")
-                    .attr("x", textX + bbox.width + (isMobile ? 10 : 25))
-                    .attr("y", currentY)
-                    .attr("fill", d.color)
-                    .attr("font-size", isMobile ? "20px" : "40px")
-                    .attr("font-family", "Arial, sans-serif")
-                    .style("opacity", 0.7)
-                    .text(d.percentage + "%");
-                    
-                legendGroup.append("text")
-                    .attr("x", textX)
-                    .attr("y", currentY + (isMobile ? 20 : 30))
-                    .attr("fill", "#a0aab5")
-                    .attr("font-size", isMobile ? "12px" : "15px")
-                    .attr("font-family", "Arial, sans-serif")
-                    .text("Total de bloqueos: " + d.value);
+                var cx = isMobile ? width / 2 : width * 0.70;
+                var cy = isMobile ? height * 0.65 : height / 2;
+                var radius = isMobile ? width * 0.35 : Math.min(width * 0.45, height) / 2 * 0.8;
+                var innerRadius = radius * 0.35;
 
-                if (!isMobile) {
-                    var lineStartX = textX + bbox.width + 120; 
-                    var lineStartY = currentY - (isMobile ? 5 : 12);
+                var svg = container.append("svg")
+                    .attr("width", "100%")
+                    .attr("height", height);
+
+                var pie = d3.pie()
+                    .value(function(d) { return d.value; })
+                    .sort(null)
+                    .padAngle(0.015);
+
+                var arc = d3.arc()
+                    .innerRadius(innerRadius)
+                    .outerRadius(radius);
+
+                var arcHover = d3.arc()
+                    .innerRadius(innerRadius)
+                    .outerRadius(radius * 1.05);
+
+                var arcs = pie(data);
+
+                var chartGroup = svg.append("g")
+                    .attr("transform", "translate(" + cx + "," + cy + ")");
+
+                // Dibujar Slices
+                chartGroup.selectAll("path")
+                    .data(arcs)
+                    .enter().append("path")
+                    .attr("d", arc)
+                    .attr("fill", function(d) { return d.data.color; })
+                    .style("cursor", "pointer")
+                    .on("mouseover", function(d) {
+                        d3.select(this).transition().duration(200).attr("d", arcHover);
+                    })
+                    .on("mouseout", function(d) {
+                        d3.select(this).transition().duration(200).attr("d", arc);
+                    })
+                    .on("click", function(d) {
+                        // Click redirige a ip_bloqueadas
+                        var tipo_id = d.data.label === "WAF" ? "Bloqueos WAF" : (d.data.label === "Bots" ? "Bloqueos Bots" : "Bloqueos Fuerza Bruta");
+                        var r = range === "hoy" ? "HOY" : (range === "semana" ? "SEMANA" : "MES");
+                        location.href = "ip_bloqueadas.php?tipo!=" + tipo_id + "&rango!=" + r;
+                    });
+
+                // Iconos en el pastel
+                chartGroup.selectAll("image")
+                    .data(arcs)
+                    .enter().append("image")
+                    .attr("href", function(d) { return d.data.icon; })
+                    .attr("width", 32)
+                    .attr("height", 32)
+                    .attr("x", function(d) { return arc.centroid(d)[0] - 16; })
+                    .attr("y", function(d) { return arc.centroid(d)[1] - 16; })
+                    .style("filter", "brightness(0) invert(1) drop-shadow(0px 2px 4px rgba(0,0,0,0.5))");
+
+                // Textos a la izquierda
+                var textX = isMobile ? width * 0.1 : width * 0.15;
+                var startY = isMobile ? 40 : height * 0.25;
+                var spacingY = isMobile ? 60 : height * 0.25;
+
+                var polylineOuterArc = d3.arc()
+                    .innerRadius(radius)
+                    .outerRadius(radius);
+
+                data.forEach(function(d, i) {
+                    var arcData = arcs[i];
+                    if(arcData.value === 0) return; // Omitir si no hay datos
                     
-                    var c = polylineOuterArc.centroid(arcData);
-                    var targetX = cx + c[0];
-                    var targetY = cy + c[1];
+                    var currentY = startY + (i * spacingY);
+                    var legendGroup = svg.append("g");
+
+                    var textElem = legendGroup.append("text")
+                        .attr("x", textX)
+                        .attr("y", currentY)
+                        .attr("fill", d.color)
+                        .attr("font-size", isMobile ? "20px" : "40px")
+                        .attr("font-family", "Arial, sans-serif")
+                        .attr("font-weight", "bold")
+                        .text(d.label);
+                        
+                    var bbox = textElem.node().getBBox();
                     
-                    var polylineX2 = width * 0.45;
-                    
-                    var points = lineStartX + "," + lineStartY + " " + polylineX2 + "," + lineStartY + " " + targetX + "," + targetY;
-                    
-                    svg.append("polyline")
-                        .attr("points", points)
-                        .attr("fill", "none")
-                        .attr("stroke", "#4b5c6e")
-                        .attr("stroke-width", 1.5)
-                        .style("opacity", 0.6);
-                }
-            });
-        }
-        </script>
-        <script>
-            $(document).ready(function(){
+                    legendGroup.append("text")
+                        .attr("x", textX + bbox.width + (isMobile ? 10 : 25))
+                        .attr("y", currentY)
+                        .attr("fill", d.color)
+                        .attr("font-size", isMobile ? "20px" : "40px")
+                        .attr("font-family", "Arial, sans-serif")
+                        .style("opacity", 0.7)
+                        .text(d.percentage + "%");
+                        
+                    legendGroup.append("text")
+                        .attr("x", textX)
+                        .attr("y", currentY + (isMobile ? 20 : 30))
+                        .attr("fill", "#a0aab5")
+                        .attr("font-size", isMobile ? "12px" : "15px")
+                        .attr("font-family", "Arial, sans-serif")
+                        .text("Total de bloqueos: " + d.value);
+
+                    if (!isMobile) {
+                        var lineStartX = textX + bbox.width + 120; 
+                        var lineStartY = currentY - (isMobile ? 5 : 12);
+                        
+                        var c = polylineOuterArc.centroid(arcData);
+                        var targetX = cx + c[0];
+                        var targetY = cy + c[1];
+                        
+                        var polylineX2 = width * 0.45;
+                        
+                        var points = lineStartX + "," + lineStartY + " " + polylineX2 + "," + lineStartY + " " + targetX + "," + targetY;
+                        
+                        svg.append("polyline")
+                            .attr("points", points)
+                            .attr("fill", "none")
+                            .attr("stroke", "#4b5c6e")
+                            .attr("stroke-width", 1.5)
+                            .style("opacity", 0.6);
+                    }
+                });
+            }
         </script>
 
         <!-- grafica de tipos de ataques -->

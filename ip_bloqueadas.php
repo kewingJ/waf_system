@@ -430,7 +430,7 @@
                                         <h3 class="box-title">Ataques Bots</h3>
                                     </div>
                                     <div class="box-body border-radius-none" id="chartUno">
-                                        <div class="chart" id="line-chart" style="height: 200px;"></div>
+                                        <div class="chart" id="line-chart3" style="height: 200px;"></div>
                                     </div>
                                 </div>
                                 <!-- /.box -->
@@ -1054,33 +1054,42 @@
         <script type="text/javascript">
             $(document).ready(function(){
                 var line = new Morris.Line({
-                    element          : 'line-chart',
+                    element          : 'line-chart3',
                     resize           : true,
                     data             : [
                     <?php
                         if($rango == "HOY")
                         {
+                            $actual_hoy = date("Y-m-d H:i:s");
+                            $pasado_hoy = date("Y-m-d") . ' 00:00:00';
+
                             $consult = mysqli_query($link,"SELECT * FROM grafica_bloqueo_bots 
-                                    WHERE grafica_bloqueo_bots.rango_bloqueo_bot = 'HOY'");
+                                    WHERE fecha_bloqueo_bot BETWEEN '$pasado_hoy' AND '$actual_hoy'");
                             while($rows = mysqli_fetch_array($consult)){
-                                $fecha_bloqueo_actual = $rows['fecha_bloqueo_rango_bot'];
-                                $totalPorFecha = $rows['total_bloqueo_rango_bot'];
+                                $fecha_bloqueo_actual = $rows['fecha_bloqueo_bot'];
+                                $totalPorFecha = $rows['total_bloqueo_bot'];
                                 echo '{ y: "'.$fecha_bloqueo_actual.'", item1: '.$totalPorFecha.'},';
                             }
                         } else if($rango == "SEMANA"){
+                            $actual_hoy = date("Y-m-d H:i:s");  
+                            $pasado_hoy = date("Y-m-d", strtotime($actual_hoy . "- 1 week"));
+
                             $consult = mysqli_query($link,"SELECT * FROM grafica_bloqueo_bots 
-                                    WHERE grafica_bloqueo_bots.rango_bloqueo_bot = 'SEMANA'");
+                                    WHERE fecha_bloqueo_bot BETWEEN '$pasado_hoy' AND '$actual_hoy'");
                             while($rows = mysqli_fetch_array($consult)){
-                                $fecha_bloqueo_actual = $rows['fecha_bloqueo_rango_bot'];
-                                $totalPorFecha = $rows['total_bloqueo_rango_bot'];
+                                $fecha_bloqueo_actual = $rows['fecha_bloqueo_bot'];
+                                $totalPorFecha = $rows['total_bloqueo_bot'];
                                 echo '{ y: "'.$fecha_bloqueo_actual.'", item1: '.$totalPorFecha.'},';
                             }
                         } else if($rango == "MES"){
+                            $actual_hoy = date("Y-m-d H:i:s");
+                            $pasado_hoy = date("Y-m-d", strtotime($actual_hoy . "- 1 month"));
+
                             $consult = mysqli_query($link,"SELECT * FROM grafica_bloqueo_bots 
-                                    WHERE grafica_bloqueo_bots.rango_bloqueo_bot = 'MES'");
+                                    WHERE fecha_bloqueo_bot BETWEEN '$pasado_hoy' AND '$actual_hoy'");
                             while($rows = mysqli_fetch_array($consult)){
-                                $fecha_bloqueo_actual = $rows['fecha_bloqueo_rango_bot'];
-                                $totalPorFecha = $rows['total_bloqueo_rango_bot'];
+                                $fecha_bloqueo_actual = $rows['fecha_bloqueo_bot'];
+                                $totalPorFecha = $rows['total_bloqueo_bot'];
                                 echo '{ y: "'.$fecha_bloqueo_actual.'", item1: '.$totalPorFecha.'},';
                             }
                         }
@@ -1088,7 +1097,7 @@
                     ],
                     xkey             : 'y',
                     ykeys            : ['item1'],
-                    labels           : ['Total ip bloquedas'],
+                    labels           : ['Total bots bloqueados'],
                     lineColors       : ['#0a63a4'],
                     lineWidth        : 2,
                     hideHover        : 'auto',
@@ -1102,11 +1111,8 @@
                 });
             });
         </script>
-        ?>
-        <!-- gradica de ip bloqueadas por fechas Dos-->
-        <script type="text/javascript">
         <?php
-        } else {?>
+        } else { ?>
         <!-- gradica de ip bloqueadas por fechas Dos-->
         <script type="text/javascript">
             $(document).ready(function(){

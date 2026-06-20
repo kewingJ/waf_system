@@ -1,5 +1,6 @@
 <?php
 include_once '../includes/config.php';
+date_default_timezone_set('America/Managua');
 /*
  * DataTables example server-side processing script.
  *
