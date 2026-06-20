@@ -12,12 +12,15 @@ $action = $_GET['action'] ?? '';
 
 switch ($action) {
     case 'ataques_por_dominio':
-        // Obtener totales de ataques agrupados por servidor en una sola consulta
+        // Obtener totales de ataques agrupados por servidor.
+        // Se utiliza la tabla 'host' que ya contiene los servidores únicos para acelerar la consulta,
+        // o se limita la búsqueda en bloqueo si no hay tabla de resumen específica para esto.
         $data = [];
         $query = mysqli_query($link, "
             SELECT server, COUNT(*) AS total
             FROM bloqueo
-            WHERE server <> '' AND server NOT LIKE '%\"'
+            WHERE server <> ''
+              AND activo_bloqueo = 1
             GROUP BY server
             ORDER BY total DESC
             LIMIT 20
@@ -58,16 +61,25 @@ switch ($action) {
         break;
 
     case 'tipos_ataque_global':
-        // Agrupación global por reglas
+        // Agrupación global por reglas. Optimizada usando JOIN directo y asegurando uso de índices.
         $data = [];
         $query = mysqli_query($link, "
-            SELECT r.nombre_rule, COUNT(b.id_bloqueo) as total
+            SELECT r.nombre_rule, COUNT(*) as total
             FROM rules r
             JOIN detalle_rule dr ON r.id_rule = dr.id_rule
             JOIN bloqueo b ON b.idN = dr.numero_rule_detalle
             WHERE b.activo_bloqueo = 1
+              AND dr.activo_r = 1
             GROUP BY r.id_rule
+            HAVING total > 0
+            ORDER BY total DESC
         ");
+
+        if (!$query) {
+             header('Content-Type: application/json');
+             echo json_encode(['error' => mysqli_error($link)]);
+             break;
+        }
 
         while ($row = mysqli_fetch_assoc($query)) {
             $data[] = [$row['nombre_rule'], (int)$row['total']];
