@@ -1034,6 +1034,41 @@
                                         .skeleton-bar.w-40 { width: 40%; }
                                         .skeleton-bar.w-70 { width: 70%; }
                                         .skeleton-bar.w-50 { width: 50%; }
+                                        .skeleton-circle {
+                                            width: 200px;
+                                            height: 200px;
+                                            border-radius: 50%;
+                                            background: linear-gradient(90deg, #e4eaf1 25%, #d1d8e0 50%, #e4eaf1 75%);
+                                            background-size: 200% 100%;
+                                            animation: shimmer 1.5s infinite;
+                                            margin: 20px auto;
+                                            position: relative;
+                                        }
+                                        .skeleton-donut::after {
+                                            content: "";
+                                            position: absolute;
+                                            top: 25%;
+                                            left: 25%;
+                                            width: 50%;
+                                            height: 50%;
+                                            background: #fff;
+                                            border-radius: 50%;
+                                        }
+                                        .skeleton-legend {
+                                            display: flex;
+                                            flex-wrap: wrap;
+                                            justify-content: center;
+                                            gap: 10px;
+                                            margin-top: 20px;
+                                        }
+                                        .skeleton-legend-item {
+                                            width: 80px;
+                                            height: 12px;
+                                            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+                                            background-size: 200% 100%;
+                                            animation: shimmer 1.5s infinite;
+                                            border-radius: 4px;
+                                        }
                                         </style>
                                         <div id="webAttacksChart" style="min-width: 400px; height: 400px; max-width: 650px; margin: 0 auto">
                                             <!-- Skeleton Loader (Se reemplaza al pintar Highcharts) -->
@@ -3285,12 +3320,24 @@
 
         <!-- grafica de tipos de ataques en la pestaña de paises-->
         <script>
+            var countriesTypesLoaded = false;
             $(document).ready(function(){
                 $(document).on('click', '#graficoP', function(e){
+                    if (countriesTypesLoaded) return;
                     $(".chart_tipoAtaque").attr("id","chart_tipoAtaque");
-                    $("#chart_tipoAtaque").html('<div class="loading"><i class="fa fa-refresh fa-spin fa-2x"></i><br>Cargando reglas...</div>');
+
+                    var skeletonDonutHtml = '<div class="skeleton-donut-wrapper">' +
+                                    '<div class="skeleton-circle skeleton-donut"></div>' +
+                                    '<div class="skeleton-legend">' +
+                                        '<div class="skeleton-legend-item"></div>' +
+                                        '<div class="skeleton-legend-item"></div>' +
+                                        '<div class="skeleton-legend-item"></div>' +
+                                    '</div>' +
+                                   '</div>';
+                    $("#chart_tipoAtaque").html(skeletonDonutHtml);
                     
                     $.getJSON('controller/ajax_home_charts.php?action=tipos_ataque_global', function(data) {
+                        countriesTypesLoaded = true;
                         var chart_tipoAtaque = c3.generate({
                             bindto: '#chart_tipoAtaque',
                             data: {
@@ -3523,14 +3570,26 @@
 
         <!-- grafica de tipos de ataques -->
         <script>
+            var typesLoaded = false;
             $(document).on('click','#grafico',function() {
+                if (typesLoaded) return;
                 $(".chart1").attr("id","chart1");
                 $(".chart2").attr("id","chart2");
                 $(".chart3").attr("id","chart3");
                 
-                $(".chart1, .chart2, .chart3").html('<div class="loading"><i class="fa fa-refresh fa-spin fa-2x"></i></div>');
+                var skeletonHtml = '<div class="skeleton-donut-wrapper">' +
+                                    '<div class="skeleton-circle skeleton-donut"></div>' +
+                                    '<div class="skeleton-legend">' +
+                                        '<div class="skeleton-legend-item"></div>' +
+                                        '<div class="skeleton-legend-item"></div>' +
+                                        '<div class="skeleton-legend-item"></div>' +
+                                    '</div>' +
+                                   '</div>';
+
+                $(".chart1, .chart2, .chart3").html(skeletonHtml);
 
                 $.getJSON('controller/ajax_home_charts.php?action=tipos_ataque_global', function(data) {
+                    typesLoaded = true;
                     // Reutilizamos el mismo JSON para las 3 donuts (o puedes crear acciones separadas para cada rango)
                     var common_config = {
                         data: {
@@ -3561,9 +3620,12 @@
 
         <!-- grafica de barra de dominios -->
         <script type="text/javascript">
+            var domainsLoaded = false;
             $(document).on('click','#graficoDominio',function() {
+                if (domainsLoaded) return;
                 $("#containerBar").html('<div class="loading"><i class="fa fa-refresh fa-spin fa-2x"></i><br>Cargando datos de 62M registros...</div>');
                 $.getJSON('controller/ajax_home_charts.php?action=ataques_por_dominio', function(data) {
+                    domainsLoaded = true;
                     Highcharts.chart('containerBar', {
                         chart: { type: 'column' },
                         title: { text: 'Ataques por dominios (Top 20)' },
@@ -3588,6 +3650,7 @@
             $(document).ready(function(){
                 $(document).on('click', '#graficoP', function(e){
                     e.preventDefault();
+                    if (countriesLoaded) return;
                     var line = new Morris.Line({
                         element          : 'line-chart3',
                         resize           : true,
@@ -3639,9 +3702,31 @@
         
         <!-- grafica de ataque ultima semana  1-->
         <script>
+            var countriesLoaded = false;
             $(document).on('click','#graficoP',function() {
-                $("#container3").html('<div class="loading"><i class="fa fa-refresh fa-spin fa-2x"></i><br>Cargando...</div>');
+                if (countriesLoaded) return;
+                var skeletonDonutHtml = '<div class="skeleton-donut-wrapper">' +
+                                    '<div class="skeleton-circle skeleton-donut"></div>' +
+                                    '<div class="skeleton-legend">' +
+                                        '<div class="skeleton-legend-item"></div>' +
+                                        '<div class="skeleton-legend-item"></div>' +
+                                        '<div class="skeleton-legend-item"></div>' +
+                                    '</div>' +
+                                   '</div>';
+                var skeletonPieHtml = '<div class="skeleton-pie-wrapper">' +
+                                    '<div class="skeleton-circle"></div>' +
+                                    '<div class="skeleton-legend">' +
+                                        '<div class="skeleton-legend-item"></div>' +
+                                        '<div class="skeleton-legend-item"></div>' +
+                                        '<div class="skeleton-legend-item"></div>' +
+                                    '</div>' +
+                                   '</div>';
+
+                $("#container3").html(skeletonDonutHtml);
+                $("#container4").html(skeletonPieHtml);
+
                 $.getJSON('controller/ajax_home_charts.php?action=tipos_ataque_global', function(raw_data) {
+                    countriesLoaded = true;
                     var formatted_data = raw_data.map(function(item) {
                         return { name: item[0], y: item[1] };
                     });
@@ -3661,7 +3746,8 @@
         <!-- grafica de ataques ultima semana 2 -->
         <script>
             $(document).on('click','#graficoP',function() {
-                $("#container4").html('<div class="loading"><i class="fa fa-refresh fa-spin fa-2x"></i><br>Cargando...</div>');
+                if (countriesLoaded) return;
+                // Ya se cargó el skeleton arriba
                 $.getJSON('controller/ajax_home_charts.php?action=ataques_por_pais', function(data) {
                     Highcharts.chart('container4', {
                       chart: { type: 'pie' },
@@ -3896,11 +3982,14 @@
 
         <!-- grafica de line a de tiempo de visitas -->
         <script>
+            var visitsTimelineLoaded = false;
             $(document).ready(function(){
                 $(document).on('click', '#graficoVisita', function(e){
                     e.preventDefault();
+                    if (visitsTimelineLoaded) return;
                     $("#line-chart4").html('<div class="loading"><i class="fa fa-refresh fa-spin fa-2x"></i></div>');
                     $.getJSON('controller/ajax_home_charts.php?action=timeline_visitas', function(data) {
+                        visitsTimelineLoaded = true;
                         $("#line-chart4").empty();
                         var line = new Morris.Line({
                             element          : 'line-chart4',
@@ -3927,9 +4016,12 @@
 
         <!-- grafica de barra de visita por dominios -->
         <script type="text/javascript">
+            var visitsDomainsLoaded = false;
             $(document).on('click','#graficoVisita',function() {
+                if (visitsDomainsLoaded) return;
                 $("#containerBarDominio").html('<div class="loading"><i class="fa fa-refresh fa-spin fa-2x"></i><br>Cargando datos de 62M registros...</div>');
                 $.getJSON('controller/ajax_home_charts.php?action=visitas_por_dominio', function(data) {
+                    visitsDomainsLoaded = true;
                     Highcharts.chart('containerBarDominio', {
                         chart: { type: 'column' },
                         title: { text: 'Visitas por dominio (Top 20)' },

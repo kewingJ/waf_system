@@ -1,9 +1,10 @@
 <?php
 // controller/cron_rebuild_visitas_group.php
-// Reconstrucción COMPLETA de visita_dominio_group.
-// EJECUTAR SOLO en horas de bajo tráfico (ej. madrugada, 3am).
-// Agrega al cron del servidor con baja frecuencia (ej. semanal):
-//   0 3 * * 0  php /var/www/.../controller/cron_rebuild_visitas_group.php
+// Reconstrucción INCREMENTAL de visita_dominio_group.
+// Se recomienda ejecutar cada hora o cada día para mantener las estadísticas actualizadas.
+// Para reconstrucción completa, ejecutar con el parámetro --full.
+// Ejemplo Cron (cada hora):
+//   0 * * * *  php /var/www/.../controller/cron_rebuild_visitas_group.php
 
 $baseDir = dirname(__DIR__);
 include_once $baseDir . '/includes/config.php';
@@ -11,15 +12,31 @@ include_once __DIR__ . '/cron_helpers.php';
 
 $cronLock = waf_acquire_cron_lock('cron_rebuild_visitas_group');
 
-// Limpiar la tabla de resumen completamente
-mysqli_query($link, "TRUNCATE TABLE visita_dominio_group");
-if (mysqli_errno($link)) {
-    error_log("[rebuild_group] Error TRUNCATE: " . mysqli_error($link));
-    exit(1);
+$stateFile = waf_cron_state_dir() . '/visitas_group_watermark.json';
+$lastId = 0;
+$isFull = false;
+
+if (isset($argv) && is_array($argv) && in_array('--full', $argv)) {
+    $isFull = true;
 }
 
-// Reconstruir en lotes de 500,000 IDs para no saturar MySQL de golpe
-$minId = 1;
+if (!$isFull && is_file($stateFile)) {
+    $state = json_decode(file_get_contents($stateFile), true);
+    $lastId = (int)($state['last_id'] ?? 0);
+}
+
+if ($isFull) {
+    // Limpiar la tabla de resumen completamente solo si es rebuild total
+    mysqli_query($link, "TRUNCATE TABLE visita_dominio_group");
+    if (mysqli_errno($link)) {
+        error_log("[rebuild_group] Error TRUNCATE: " . mysqli_error($link));
+        exit(1);
+    }
+    $lastId = 0;
+}
+
+// Empezar desde el último ID procesado
+$minId = $lastId + 1;
 $batchSize = 500000;
 
 $maxRow = mysqli_fetch_assoc(mysqli_query($link, "SELECT MAX(id_visita) AS m FROM visita_dominio"));
@@ -64,13 +81,16 @@ while ($minId <= $maxId) {
     usleep(200000); // 200ms
 }
 
-// Resetear el watermark incremental para que el script diario arranque desde aquí
-$stateFile = waf_cron_state_dir() . '/visitas_group_watermark.json';
+// Guardar el watermark incremental
 file_put_contents($stateFile, json_encode([
     'last_id'    => $maxId,
     'updated_at' => date('Y-m-d H:i:s'),
-    'full_rebuild' => true,
+    'full_rebuild' => $isFull,
 ]));
 
-echo "OK. Reconstrucción completa en $iterations lotes hasta id_visita=$maxId\n";
+if ($iterations > 0) {
+    echo "OK. Procesados registros desde " . ($lastId + 1) . " hasta $maxId en $iterations lotes.\n";
+} else {
+    echo "No hay nuevos registros para procesar (Last ID: $lastId).\n";
+}
 ?>
