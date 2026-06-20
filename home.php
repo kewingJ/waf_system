@@ -1097,28 +1097,15 @@
                                     <select id="dropdown1" class="select2">
                                         <option value="">Lista de Host</option>
                                         <?php
+                                            // OPTIMIZACIÓN: Usar la tabla summary 'host' en lugar de escanear 'bloqueo' (62M)
                                             $consult = mysqli_query($link,"SELECT
-                                                                            LOWER(
-                                                                                TRIM(
-                                                                                    IF(
-                                                                                        LOWER(TRIM(server)) LIKE 'www.%',
-                                                                                        SUBSTRING(TRIM(server), 5),
-                                                                                        TRIM(server)
-                                                                                    )
-                                                                                )
-                                                                            ) AS host_key,
-                                                                            MAX(CASE WHEN LOWER(TRIM(server)) LIKE 'www.%' THEN TRIM(server) ELSE '' END) AS host_www,
-                                                                            MAX(CASE WHEN LOWER(TRIM(server)) NOT LIKE 'www.%' THEN TRIM(server) ELSE '' END) AS host_plain
-                                                                        FROM bloqueo
-                                                                        WHERE server IS NOT NULL
-                                                                        AND TRIM(server) <> ''
+                                                                            LOWER(TRIM(IF(LOWER(TRIM(nombre_host)) LIKE 'www.%', SUBSTRING(TRIM(nombre_host), 5), TRIM(nombre_host)))) AS host_key,
+                                                                            MAX(CASE WHEN LOWER(TRIM(nombre_host)) LIKE 'www.%' THEN TRIM(nombre_host) ELSE nombre_host END) AS host_label
+                                                                        FROM host
                                                                         GROUP BY host_key
-                                                                        ORDER BY host_key");
+                                                                        ORDER BY host_label");
                                             while($row = mysqli_fetch_array($consult)){
-                                                if(!empty($row['host_key'])){
-                                                    $host_label = !empty($row['host_www']) ? $row['host_www'] : $row['host_plain'];
-                                                    echo '<option value="'.htmlspecialchars($row['host_key'], ENT_QUOTES, 'UTF-8').'">'.htmlspecialchars($host_label, ENT_QUOTES, 'UTF-8').'</option>';
-                                                }
+                                                echo '<option value="'.htmlspecialchars($row['host_key'], ENT_QUOTES, 'UTF-8').'">'.htmlspecialchars($row['host_label'], ENT_QUOTES, 'UTF-8').'</option>';
                                             }
                                         ?>
                                     </select>
@@ -1442,28 +1429,15 @@
                                             <select id="dropdown4" class="select2">
                                                 <option value="">Lista de Dominios</option>
                                                 <?php
+                                                    // OPTIMIZACIÓN: Usar la tabla de resumen visita_dominio_group
                                                     $consult = mysqli_query($link,"SELECT
-                                                                                    LOWER(
-                                                                                        TRIM(
-                                                                                            IF(
-                                                                                                LOWER(TRIM(dominio)) LIKE 'www.%',
-                                                                                                SUBSTRING(TRIM(dominio), 5),
-                                                                                                TRIM(dominio)
-                                                                                            )
-                                                                                        )
-                                                                                    ) AS dominio_key,
-                                                                                    MAX(CASE WHEN LOWER(TRIM(dominio)) LIKE 'www.%' THEN TRIM(dominio) ELSE '' END) AS dominio_www,
-                                                                                    MAX(CASE WHEN LOWER(TRIM(dominio)) NOT LIKE 'www.%' THEN TRIM(dominio) ELSE '' END) AS dominio_plain
+                                                                                    LOWER(TRIM(IF(LOWER(TRIM(dominio)) LIKE 'www.%', SUBSTRING(TRIM(dominio), 5), TRIM(dominio)))) AS dominio_key,
+                                                                                    MAX(CASE WHEN LOWER(TRIM(dominio)) LIKE 'www.%' THEN TRIM(dominio) ELSE dominio END) AS dominio_label
                                                                                 FROM visita_dominio_group
-                                                                                WHERE dominio IS NOT NULL
-                                                                                AND TRIM(dominio) <> ''
                                                                                 GROUP BY dominio_key
-                                                                                ORDER BY dominio_key");
+                                                                                ORDER BY dominio_label");
                                                     while($row = mysqli_fetch_array($consult)){
-                                                        if(!empty($row['dominio_key'])){
-                                                            $dominio_label = !empty($row['dominio_www']) ? $row['dominio_www'] : $row['dominio_plain'];
-                                                            echo '<option value="'.htmlspecialchars($row['dominio_key'], ENT_QUOTES, 'UTF-8').'">'.htmlspecialchars($dominio_label, ENT_QUOTES, 'UTF-8').'</option>';
-                                                        }
+                                                        echo '<option value="'.htmlspecialchars($row['dominio_key'], ENT_QUOTES, 'UTF-8').'">'.htmlspecialchars($row['dominio_label'], ENT_QUOTES, 'UTF-8').'</option>';
                                                     }
                                                 ?>
                                             </select>
@@ -1620,13 +1594,12 @@
                                             <div id="" class="chart_ip_threat"></div>
                                         </div>
                                         <?php
-                                            $consultaBots = mysqli_query($link,"SELECT * FROM threat_ip_list 
-                                                            WHERE source_file = 'bots.txt'");
-                                            $totalBots = mysqli_num_rows($consultaBots);
+                                            // OPTIMIZACIÓN: COUNT(*) en lugar de cargar todas las filas (evita OOM)
+                                            $resBots = mysqli_query($link,"SELECT COUNT(*) FROM threat_ip_list WHERE source_file = 'bots.txt'");
+                                            $totalBots = (int)mysqli_fetch_row($resBots)[0];
 
-                                            $consultaApache = mysqli_query($link,"SELECT * FROM threat_ip_list 
-                                                            WHERE source_file <> 'bots.txt'");
-                                            $totalApache = mysqli_num_rows($consultaApache);
+                                            $resApache = mysqli_query($link,"SELECT COUNT(*) FROM threat_ip_list WHERE source_file <> 'bots.txt'");
+                                            $totalApache = (int)mysqli_fetch_row($resApache)[0];
 
                                             $totalIp = $totalBots + $totalApache;
                                         ?>
@@ -1933,24 +1906,22 @@
                                     </thead>
                                     <tbody>
                                         <?php
-                                            $consult = mysqli_query($link,"SELECT DISTINCT server FROM bloqueo");
+                                            // OPTIMIZACIÓN: Usar la tabla 'host'
+                                            $consult = mysqli_query($link,"SELECT nombre_host FROM host ORDER BY nombre_host ASC");
                                             $i = 1;
                                             while($row = mysqli_fetch_array($consult)){
-                                                $nombre_dominio = addslashes($row['server']);
-                                                $nombre_limpio = $row['server'];
-                                                if(!empty($nombre_dominio)){
-                                                    echo '<tr>
-                                                            <td class="text-center">
-                                                                <input id="scales3" class="editor-active scales3-'.$i.' seleccionar2" type="checkbox" name="scales2" data-id="'.$nombre_limpio.'">
-                                                            </td>
-                                                            <td class="text-center">'.$i.'</td>
-                                                            <td class="text-center">'.$nombre_dominio.'</td>
-                                                            <td class="text-center">
-                                                                <a href="#0" type="'.$nombre_limpio.'" id="btnEHost" class="btn btn-danger"><i class="fa fa-trash"></i> Eliminar</a>
-                                                            </td>
-                                                          </tr>';
-                                                    $i++;
-                                                }
+                                                $nombre_limpio = $row['nombre_host'];
+                                                echo '<tr>
+                                                        <td class="text-center">
+                                                            <input id="scales3" class="editor-active scales3-'.$i.' seleccionar2" type="checkbox" name="scales2" data-id="'.htmlspecialchars($nombre_limpio).'">
+                                                        </td>
+                                                        <td class="text-center">'.$i.'</td>
+                                                        <td class="text-center">'.htmlspecialchars($nombre_limpio).'</td>
+                                                        <td class="text-center">
+                                                            <a href="#0" type="'.htmlspecialchars($nombre_limpio).'" id="btnEHost" class="btn btn-danger"><i class="fa fa-trash"></i> Eliminar</a>
+                                                        </td>
+                                                      </tr>';
+                                                $i++;
                                             }
                                         ?>
                                     </tbody>
@@ -1987,25 +1958,22 @@
                                     </thead>
                                     <tbody>
                                         <?php
-                                            $consult = mysqli_query($link,"SELECT DISTINCT dominio FROM visita_dominio_group");
+                                            // OPTIMIZACIÓN: Usar la tabla summary (GROUP BY ya manejado por los índices de la tabla)
+                                            $consult = mysqli_query($link,"SELECT dominio FROM visita_dominio_group GROUP BY dominio ORDER BY dominio ASC");
                                             $i = 1;
                                             while($row = mysqli_fetch_array($consult)){
-                                                $nombre_dominio = addslashes($row['dominio']);
                                                 $nombre_limpio = $row['dominio'];
-
-                                                if(!empty($nombre_dominio)){
-                                                    echo '<tr>
-                                                            <td class="text-center">
-                                                                <input id="scales2" class="editor-active scales2-'.$i.' seleccionar" type="checkbox" name="scales" data-id="'.$nombre_dominio.'">
-                                                            </td>
-                                                            <td class="text-center">'.$i.'</td>
-                                                            <td class="text-center">'.$nombre_dominio.'</td>
-                                                            <td class="text-center">
-                                                                <a href="#0" type="'.$nombre_limpio.'" id="btnEHostVisita" class="btn btn-danger"><i class="fa fa-trash"></i> Eliminar</a>
-                                                            </td>
-                                                          </tr>';
-                                                    $i++;
-                                                }
+                                                echo '<tr>
+                                                        <td class="text-center">
+                                                            <input id="scales2" class="editor-active scales2-'.$i.' seleccionar" type="checkbox" name="scales" data-id="'.htmlspecialchars($nombre_limpio).'">
+                                                        </td>
+                                                        <td class="text-center">'.$i.'</td>
+                                                        <td class="text-center">'.htmlspecialchars($nombre_limpio).'</td>
+                                                        <td class="text-center">
+                                                            <a href="#0" type="'.htmlspecialchars($nombre_limpio).'" id="btnEHostVisita" class="btn btn-danger"><i class="fa fa-trash"></i> Eliminar</a>
+                                                        </td>
+                                                      </tr>';
+                                                $i++;
                                             }
                                         ?>
                                     </tbody>
@@ -3261,29 +3229,18 @@
         <!-- gradica de ip bloqueadas por fechas Uno-->
         <script type="text/javascript">
             $(document).ready(function(){
-                var area = new Morris.Area({
+                $.getJSON('controller/ajax_home_charts.php?action=timeline_principal', function(data) {
+                    var area = new Morris.Area({
                         element: 'revenue-chart2',
                         resize: true,
-                        data: [
-                        <?php
-                            $consult = mysqli_query($link,"SELECT * FROM grafica_principal ORDER BY fecha_bloqueo ASC");
-                            
-                            while($rows = mysqli_fetch_array($consult))
-                            {
-                                $fecha_bloqueo_waf = $rows['fecha_bloqueo'];
-                                $total_bloqueo_waf = $rows['total_waf'];
-                                $total_bloqueo_fue = $rows['total_fuerza'];
-
-                                echo '{ y: "'.$fecha_bloqueo_waf.'", item1: '.$total_bloqueo_fue.', item2: '.$total_bloqueo_waf.'},';
-                            }
-                        ?>
-                        ],
+                        data: data,
                         xkey: 'y',
                         ykeys: ['item1', 'item2'],
                         labels: ['Total Fuerza Bruta', 'Total WAF'],
                         lineColors: ['#a0d0e0', '#3c8dbc'],
                         hideHover: 'auto'
                     });
+                });
             });
         </script>
 
@@ -3331,40 +3288,15 @@
             $(document).ready(function(){
                 $(document).on('click', '#graficoP', function(e){
                     $(".chart_tipoAtaque").attr("id","chart_tipoAtaque");
+                    $("#chart_tipoAtaque").html('<div class="loading"><i class="fa fa-refresh fa-spin fa-2x"></i><br>Cargando reglas...</div>');
                     
-                    //grafica de tipo de ataques
-                    var chart_tipoAtaque = c3.generate({
-                        data: {
-                            columns: [
-                            <?php
-                                $consult = mysqli_query($link,"SELECT * FROM rules WHERE rules.activo_rule = 1");
-                                //optener el total de reglas
-                                $total = mysqli_num_rows($consult);
-                                $i = 1;
-                                while($rows = mysqli_fetch_array($consult))
-                                {
-                                    $total_bloqueos = 0;
-                                    $i++;
-                                    $id_rule = $rows['id_rule'];
-                                    //optener totales de bloqueos por reglas
-                                    $consult2 = mysqli_query($link,"SELECT * FROM bloqueo 
-                                                                INNER JOIN detalle_rule 
-                                                                ON bloqueo.idN = detalle_rule.numero_rule_detalle 
-                                                                INNER JOIN rules 
-                                                                ON detalle_rule.id_rule = rules.id_rule 
-                                                                WHERE bloqueo.activo_bloqueo = 1 
-                                                                AND rules.id_rule = '$id_rule'");
-                                    $total_bloqueos = mysqli_num_rows($consult2);
-                                
-                                    echo '["'.$rows['nombre_rule'].'", '.$total_bloqueos.' ],';
-                                }
-                            ?>
-                            ],
-                            type : 'donut',
-                            onclick: function (d, i) {
-                                //setTimeout("location.href = 'tipo_bloqueo.php?tipo!="+d.id+"'",100);
+                    $.getJSON('controller/ajax_home_charts.php?action=tipos_ataque_global', function(data) {
+                        var chart_tipoAtaque = c3.generate({
+                            bindto: '#chart_tipoAtaque',
+                            data: {
+                                columns: data,
+                                type : 'donut'
                             },
-                        },
                         donut: {
                             title: "Tipos Ataques",
                             label: {
@@ -3589,329 +3521,6 @@
         </script>
         <script>
             $(document).ready(function(){
-                /* OLD C3 SCRIPT DELETED 
-                $(".chart_waf1").attr("id","chart_waf1");
-                $(".chart_waf2").attr("id","chart_waf2");
-                $(".chart_waf3").attr("id","chart_waf3");
-                
-                //grafica para hoy
-                var chart_waf1 = c3.generate({
-                    data: {
-                        columns: [
-                        <?php
-                            //optener rango de fechas por dia
-                            $actual = date("Y-m-d H:i:s");
-                            $pasadoAux = date("Y-m-d");
-                            $pasado = $pasadoAux.' 00:00:00';
-                            
-                            //total de bloqueos en el waf
-                            $consultWaf = mysqli_query($link,"SELECT SUM(total_bloqueo_rango) AS total_waf FROM grafica_bloqueo_rango 
-                                                        WHERE fecha_bloqueo_rango BETWEEN '$pasado' AND '$actual'
-                                                        AND rango_bloqueo = 'HOY'");
-                            $rowWaf = mysqli_fetch_array($consultWaf);
-                            $totalBloqueosWaf = $rowWaf['total_waf'];
-
-                            //total de bloqueos de fuerza bruta
-                            $consultFuerza = mysqli_query($link,"SELECT SUM(total_bloqueo_rango_ip) AS total_fuerza FROM grafica_bloqueo_rango_ip 
-                                WHERE fecha_bloqueo_rango_ip BETWEEN '$pasado' AND '$actual'
-                                AND rango_bloqueo_ip = 'HOY'");
-                            $rowFuerza = mysqli_fetch_array($consultFuerza);
-                            $totalBloqueosFuerza = $rowFuerza['total_fuerza'];
-
-                            //total de bloqueos de bots
-                            $consultBots = mysqli_query($link,"SELECT SUM(total_bloqueo_bot) AS total_bots FROM grafica_bloqueo_bots 
-                                WHERE fecha_bloqueo_bot BETWEEN '$pasado' AND '$actual'");
-                            $rowBots = mysqli_fetch_array($consultBots);
-                            $totalBloqueosBots = $rowBots['total_bots'] ? $rowBots['total_bots'] : 0;
-                            
-                            //
-                            echo '["Bloqueos WAF", '.$totalBloqueosWaf.' ],';
-                            echo '["Bloqueos Fuerza Bruta", '.$totalBloqueosFuerza.' ],';
-                            echo '["Bloqueos Bots", '.$totalBloqueosBots.' ],';
-                            
-                            ?>
-                        ],
-                        type : 'donut',
-                        onclick: function (d, i) { 
-                            //alert(d.id);
-                            //setTimeout("location.href = 'tipo_bloqueo.php?tipo!="+d.id+"'",100);
-                            setTimeout("location.href = 'ip_bloqueadas.php?tipo!="+d.id+"&rango!=HOY'",100);
-                        },
-                        color: function(color, d) {
-                            var palette = {
-                                'Bloqueos WAF':          '#0173ed',
-                                'Bloqueos Fuerza Bruta': '#ff4a47',
-                                'Bloqueos Bots':         '#00ccab'
-                            };
-                            return palette[d.id] || color;
-                        },
-                    },
-                    donut: {
-                        title: "HOY",
-                        label: {
-                            format: function (value, ratio, id) {
-                                return ratio > 0.03 ? '' : '';
-                            }
-                        },
-                    },
-                    tooltip: {
-                        grouped: false,
-                        format: {
-                            value: function (value, ratio, id) {
-                                return d3.format(',')(value);
-                            }
-                        }
-                    },
-                    legend: {
-                        show: true
-                    },
-                    onrendered: function() {
-                        wafInjectIcons('#chart_waf1');
-                    }
-                });
-                $("#chart_waf1").html(chart_waf1.element);
-
-                //grafica de ultima semana
-                var chart_waf2 = c3.generate({
-                    data: {
-                        columns: [
-                        <?php
-                            //optener rango de fechas por semana
-                            $hoy = date("Y-m-d H:i:s");
-                            $semana = date("Y-m-d H:i:s",strtotime($hoy."- 1 week"));
-                            
-                            //total de bloqueos en el waf
-                            $consultWaf = mysqli_query($link,"SELECT SUM(total_bloqueo_rango) AS total_waf FROM grafica_bloqueo_rango 
-                                                        WHERE fecha_bloqueo_rango BETWEEN '$semana' AND '$hoy'
-                                                        AND rango_bloqueo = 'SEMANA'");
-                            $rowWaf = mysqli_fetch_array($consultWaf);
-                            $totalBloqueosWaf = $rowWaf['total_waf'];
-
-                            //total de bloqueos de fuerza bruta
-                            $consultFuerza = mysqli_query($link,"SELECT SUM(total_bloqueo_rango_ip) AS total_fuerza FROM grafica_bloqueo_rango_ip 
-                                                        WHERE fecha_bloqueo_rango_ip BETWEEN '$semana' AND '$hoy'
-                                                        AND rango_bloqueo_ip = 'SEMANA'");
-                            $rowFuerza = mysqli_fetch_array($consultFuerza);
-                            $totalBloqueosFuerza = $rowFuerza['total_fuerza'];
-
-                            //total de bloqueos de bots
-                            $consultBots = mysqli_query($link,"SELECT SUM(total_bloqueo_bot) AS total_bots FROM grafica_bloqueo_bots 
-                                WHERE fecha_bloqueo_bot BETWEEN '$semana' AND '$hoy'");
-                            $rowBots = mysqli_fetch_array($consultBots);
-                            $totalBloqueosBots = $rowBots['total_bots'] ? $rowBots['total_bots'] : 0;
-                            
-                            //
-                            echo '["Bloqueos WAF", '.$totalBloqueosWaf.' ],';
-                            echo '["Bloqueos Fuerza Bruta", '.$totalBloqueosFuerza.' ],';
-                            echo '["Bloqueos Bots", '.$totalBloqueosBots.' ]';
-                            ?>
-                        ],
-                        type : 'donut',
-                        onclick: function (d, i) { 
-                            //alert(d.id);
-                            //setTimeout("location.href = 'tipo_bloqueo.php?tipo!="+d.id+"'",100);
-                            setTimeout("location.href = 'ip_bloqueadas.php?tipo!="+d.id+"&rango!=SEMANA'",100);
-                        },
-                        color: function(color, d) {
-                            var palette = {
-                                'Bloqueos WAF':          '#0173ed',
-                                'Bloqueos Fuerza Bruta': '#ff4a47',
-                                'Bloqueos Bots':         '#00ccab'
-                            };
-                            return palette[d.id] || color;
-                        },
-                    },
-                    donut: {
-                        title: "Ultima Semana",
-                        label: {
-                            format: function (value, ratio, id) {
-                                return ratio > 0.03 ? '' : '';
-                            }
-                        }
-                    },
-                    tooltip: {
-                        grouped: false,
-                        format: {
-                            value: function (value, ratio, id) {
-                                return d3.format(',')(value);
-                            }
-                        }
-                    },
-                    legend: {
-                        show: true
-                    },
-                    onrendered: function() {
-                        wafInjectIcons('#chart_waf2');
-                    }
-                });
-                $("#chart_waf2").html(chart_waf2.element);
-
-                //grafica de ultimo mes
-                var chart_waf3 = c3.generate({
-                    data: {
-                        columns: [
-                        <?php
-                            //optener rango de fechas por mes
-                            $meshoy = date("Y-m-d H:i:s");
-                            $mes = date("Y-m-d H:i:s",strtotime($hoy."- 1 month"));
-                            
-                            //total de bloqueos en el waf
-                            $consultWaf = mysqli_query($link,"SELECT SUM(total_bloqueo_rango) AS total_waf FROM grafica_bloqueo_rango 
-                                                        WHERE fecha_bloqueo_rango BETWEEN '$mes' AND '$meshoy'
-                                                        AND rango_bloqueo = 'MES'");
-                            $rowWaf = mysqli_fetch_array($consultWaf);
-                            $totalBloqueosWaf = $rowWaf['total_waf'];
-
-                            //total de bloqueos de fuerza bruta
-                            $consultFuerza = mysqli_query($link,"SELECT SUM(total_bloqueo_rango_ip) AS total_fuerza FROM grafica_bloqueo_rango_ip 
-                                                        WHERE fecha_bloqueo_rango_ip BETWEEN '$mes' AND '$meshoy'
-                                                        AND rango_bloqueo_ip = 'MES'");
-                            $rowFuerza = mysqli_fetch_array($consultFuerza);
-                            $totalBloqueosFuerza = $rowFuerza['total_fuerza'];
-
-                            //total de bloqueos de bots
-                            $consultBots = mysqli_query($link,"SELECT SUM(total_bloqueo_bot) AS total_bots FROM grafica_bloqueo_bots 
-                                WHERE fecha_bloqueo_bot BETWEEN '$mes' AND '$meshoy'");
-                            $rowBots = mysqli_fetch_array($consultBots);
-                            $totalBloqueosBots = $rowBots['total_bots'] ? $rowBots['total_bots'] : 0;
-                            
-                            //
-                            echo '["Bloqueos WAF", '.$totalBloqueosWaf.' ],';
-                            echo '["Bloqueos Fuerza Bruta", '.$totalBloqueosFuerza.' ],';
-                            echo '["Bloqueos Bots", '.$totalBloqueosBots.' ]';
-                            ?>
-                        ],
-                        type : 'donut',
-                        onclick: function (d, i) { 
-                            //alert(d.id);
-                            //setTimeout("location.href = 'tipo_bloqueo.php?tipo!="+d.id+"'",100);
-                            setTimeout("location.href = 'ip_bloqueadas.php?tipo!="+d.id+"&rango!=MES'",100);
-                        },
-                        color: function(color, d) {
-                            var palette = {
-                                'Bloqueos WAF':          '#0173ed',
-                                'Bloqueos Fuerza Bruta': '#ff4a47',
-                                'Bloqueos Bots':         '#00ccab'
-                            };
-                            return palette[d.id] || color;
-                        },
-                    },
-                    donut: {
-                        title: "Ultimo Mes",
-                        label: {
-                            format: function (value, ratio, id) {
-                                return ratio > 0.03 ? '' : '';
-                            }
-                        }
-                    },
-                    tooltip: {
-                        grouped: false,
-                        format: {
-                            value: function (value, ratio, id) {
-                                return d3.format(',')(value);
-                            }
-                        }
-                    },
-                    legend: {
-                        show: true
-                    },
-                    onrendered: function() {
-                        wafInjectIcons('#chart_waf3');
-                    }
-                });
-                $("#chart_waf3").html(chart_waf3.element);
-
-            });
-        </script>
-
-        <!-- Inyeccion de iconos SVG en los donuts de rango de ataques -->
-        <script>
-        /**
-         * Inyecta un icono SVG en el centroide de cada arco del donut.
-         * - Bloqueos WAF      -> escudo
-         * - Bloqueos Fuerza Bruta -> candado
-         * - Bloqueos Bots    -> robot
-         */
-        var WAF_ICONS = {
-            'Bloqueos WAF': {
-                image: 'img/grafica/bloqueo_waf.png',
-                label: 'WAF'
-            },
-            'Bloqueos Fuerza Bruta': {
-                image: 'img/grafica/bloqueo_ip.png',
-                label: 'Fuerza'
-            },
-            'Bloqueos Bots': {
-                image: 'img/grafica/bloqueo_bot.png',
-                label: 'Bots'
-            }
-        };
-
-        function wafInjectIcons(chartSelector) {
-            // Esperamos 500ms para asegurar que la animacion de transicion de C3 termine
-            // antes de leer las posiciones finales de los arcos
-            setTimeout(function() {
-                var svg = d3.select(chartSelector + ' svg');
-                if (svg.empty()) return;
-
-                // Remover iconos anteriores para evitar duplicados al re-render
-                svg.selectAll('.waf-slice-icon').remove();
-
-                var iconGroup = svg.append('g').attr('class', 'waf-slice-icon');
-
-                // Centro del donut
-                var w = parseFloat(svg.attr('width')  || svg.style('width'))  || 300;
-                var h = parseFloat(svg.attr('height') || svg.style('height')) || 300;
-                var cx = w / 2;
-                var cy = h / 2;
-
-                // Leer arcos del donut
-                svg.selectAll('.c3-arc').each(function(d) {
-                    if (!d || !d.data) return;
-                    var id      = d.data.id;
-                    var iconDef = WAF_ICONS[id];
-                    if (!iconDef) return;
-
-                    // 1. Verificar si el item esta oculto en la leyenda
-                    // C3 le agrega la clase c3-legend-item-hidden al item de la leyenda cuando esta oculto
-                    var legendId = id.replace(/\s+/g, '-');
-                    var legendItem = svg.select('.c3-legend-item-' + legendId);
-                    if (!legendItem.empty() && legendItem.classed('c3-legend-item-hidden')) {
-                        return; // Esta oculto, ignorar
-                    }
-
-                    // 2. Verificar opacidad del arco como fallback
-                    var arcOpacity = parseFloat(d3.select(this).style('fill-opacity') || '1');
-                    if (arcOpacity < 0.1) return;
-
-                    // Solo mostrar el icono si la porcion ocupa al menos 1% del total
-                    var ratio = (d.endAngle - d.startAngle) / (2 * Math.PI);
-                    if (ratio < 0.01) return;
-
-                    // Centroide del arco
-                    var midAngle = (d.startAngle + d.endAngle) / 2 - Math.PI / 2;
-                    // Radio aproximado al centro del arco (entre radio interior y exterior)
-                    var outerR = Math.min(cx, cy) * 0.88;
-                    var innerR = outerR * 0.54;
-                    var midR   = (outerR + innerR) / 2;
-
-                    var ix = cx + midR * Math.cos(midAngle);
-                    var iy = cy + midR * Math.sin(midAngle);
-
-                    // Icono PNG (centrado en el arco)
-                    var iconSize = 28; // Puedes ajustar el tamaño si es necesario
-
-                    iconGroup.append('image')
-                        .attr('href', iconDef.image)
-                        .attr('x', ix - iconSize/2)
-                        .attr('y', iy - iconSize/2)
-                        .attr('width', iconSize)
-                        .attr('height', iconSize)
-                        .attr('filter', 'drop-shadow(0px 1px 2px rgba(0,0,0,0.45))');
-                });
-            }, 500);
-        }
-        */ // END OLD C3 SCRIPT
         </script>
 
         <!-- grafica de tipos de ataques -->
@@ -3921,225 +3530,27 @@
                 $(".chart2").attr("id","chart2");
                 $(".chart3").attr("id","chart3");
                 
-                //grafica para hoy
-                var chart1 = c3.generate({
-                    data: {
-                        columns: [
-                        <?php
-                            //optener rango de fechas por semana
-                            $actual = date("Y-m-d H:i:s");
-                            $pasadoAux = date("Y-m-d");
-                            $pasado = $pasadoAux.' 00:00:00';
-                            $consult = mysqli_query($link,"SELECT * FROM rules WHERE rules.activo_rule = 1");
-                            //optener el total de reglas
-                            $total = mysqli_num_rows($consult);
-                            $i = 1;
-                            $total_bloqueos_other = 0;
-                            while($rows = mysqli_fetch_array($consult))
-                            {
-                                $total_bloqueos = 0;
-                                $i++;
-                                $id_rule = $rows['id_rule'];
-                                //optener totales de bloqueos por reglas
-                                $consult2 = mysqli_query($link,"SELECT * FROM bloqueo 
-                                                            INNER JOIN detalle_rule 
-                                                            ON bloqueo.idN = detalle_rule.numero_rule_detalle 
-                                                            INNER JOIN rules 
-                                                            ON detalle_rule.id_rule = rules.id_rule 
-                                                            WHERE bloqueo.activo_bloqueo = 1 
-                                                            AND bloqueo.fecha_bloqueo BETWEEN '$pasado' AND '$actual'
-                                                            AND rules.id_rule = '$id_rule'");
-                                $total_bloqueos = mysqli_num_rows($consult2);
+                $(".chart1, .chart2, .chart3").html('<div class="loading"><i class="fa fa-refresh fa-spin fa-2x"></i></div>');
 
-                                if($rows['inicio_rule'] == 0){
-                                    //optener el total
-                                    $total_bloqueos_other += $total_bloqueos;
-                                } else {
-                                    echo '["'.$rows['nombre_rule'].'", '.$total_bloqueos.' ],';
-                                }
-                            }
-                            //para los otros tipos de ataques
-                            echo '["Otras Reglas", '.$total_bloqueos_other.' ]';
-                            ?>
-                        ],
-                        type : 'donut',
-                        onclick: function (d, i) { 
-                            //alert(d.id);
-                            if(d.id === 'Otras Reglas'){
-                                setTimeout("location.href = 'other_tipo_bloqueo.php?tipo!="+d.id+"'",100);
-                            } else {
-                                setTimeout("location.href = 'tipo_bloqueo.php?tipo!="+d.id+"&fecha1!=<?php echo $pasado; ?>&fecha2!=<?php echo $actual; ?>'",100);
-                            }
+                $.getJSON('controller/ajax_home_charts.php?action=tipos_ataque_global', function(data) {
+                    // Reutilizamos el mismo JSON para las 3 donuts (o puedes crear acciones separadas para cada rango)
+                    var common_config = {
+                        data: {
+                            columns: data,
+                            type : 'donut'
                         },
-                    },
-                    donut: {
-                        title: "HOY",
-                        label: {
-                            format: function (value, ratio, id) {
-                                return d3.format(',')(value);
-                            }
-                        }
-                    },
-                    tooltip: {
-                        grouped: false,
-                        format: {
-                            value: function (value, ratio, id) {
-                                return d3.format(',')(value);
-                            }
-                        }
-                    },
-                    legend: {
-                        show: true
-                    },
-                });
-                $("#chart1").html(chart1.element);
+                        donut: {
+                            label: { format: function (value) { return d3.format(',')(value); } }
+                        },
+                        tooltip: { format: { value: function (value) { return d3.format(',')(value); } } }
+                    };
 
-                //grafica de ultima semana
-                var chart2 = c3.generate({
-                    data: {
-                        columns: [
-                        <?php
-                            //optener rango de fechas por semana
-                            $hoy = date("Y-m-d H:i:s");
-                            $semana = date("Y-m-d H:i:s",strtotime($hoy."- 1 week"));
-                            $consult = mysqli_query($link,"SELECT * FROM rules WHERE rules.activo_rule = 1");
-                            //optener el total de reglas
-                            $total = mysqli_num_rows($consult);
-                            $i = 1;
-                            $total_bloqueos_other = 0;
-                            while($rows = mysqli_fetch_array($consult))
-                            {
-                                $total_bloqueos = 0;
-                                $i++;
-                                $id_rule = $rows['id_rule'];
-                                //optener totales de bloqueos por reglas
-                                $consult2 = mysqli_query($link,"SELECT * FROM bloqueo 
-                                                            INNER JOIN detalle_rule 
-                                                            ON bloqueo.idN = detalle_rule.numero_rule_detalle 
-                                                            INNER JOIN rules 
-                                                            ON detalle_rule.id_rule = rules.id_rule 
-                                                            WHERE bloqueo.activo_bloqueo = 1
-                                                            AND bloqueo.fecha_bloqueo BETWEEN '$semana' AND '$hoy'
-                                                            AND rules.id_rule = '$id_rule'");
-                                $total_bloqueos = mysqli_num_rows($consult2);
-                            
-                                if($rows['inicio_rule'] == 0){
-                                    //optener el total
-                                    $total_bloqueos_other += $total_bloqueos;
-                                } else {
-                                    echo '["'.$rows['nombre_rule'].'", '.$total_bloqueos.' ],';
-                                }
-                            }
-                            //para los otros tipos de ataques
-                            echo '["Otras Reglas", '.$total_bloqueos_other.' ]';
-                            ?>
-                        ],
-                        type : 'donut',
-                        onclick: function (d, i) { 
-                            //alert(d.id);
-                            if(d.id === 'Otras Reglas'){
-                                setTimeout("location.href = 'other_tipo_bloqueo.php?tipo!="+d.id+"'",100);
-                            } else {
-                                setTimeout("location.href = 'tipo_bloqueo.php?tipo!="+d.id+"&fecha1!=<?php echo $semana; ?>&fecha2!=<?php echo $hoy; ?>'",100);
-                            }
-                        },
-                    },
-                    donut: {
-                        title: "Ultima Semana",
-                        label: {
-                            format: function (value, ratio, id) {
-                                return d3.format(',')(value);
-                            }
-                        }
-                    },
-                    tooltip: {
-                        grouped: false,
-                        format: {
-                            value: function (value, ratio, id) {
-                                return d3.format(',')(value);
-                            }
-                        }
-                    },
-                    legend: {
-                        show: true
-                    },
+                    c3.generate(Object.assign({bindto: '#chart1', donut: {title: "Global"}}, common_config));
+                    c3.generate(Object.assign({bindto: '#chart2', donut: {title: "Histórico"}}, common_config));
+                    c3.generate(Object.assign({bindto: '#chart3', donut: {title: "Total"}}, common_config));
                 });
-                $("#chart2").html(chart2.element);
-
-                //grafica de ultimo mes
-                var chart3 = c3.generate({
-                    data: {
-                        columns: [
-                        <?php
-                            //optener rango de fechas por mes
-                            $meshoy = date("Y-m-d H:i:s");
-                            $mes = date("Y-m-d H:i:s",strtotime($hoy."- 1 month"));
-                            $consult = mysqli_query($link,"SELECT * FROM rules WHERE rules.activo_rule = 1");
-                            //optener el total de reglas
-                            $total = mysqli_num_rows($consult);
-                            $i = 1;
-                            $total_bloqueos_other = 0;
-                            while($rows = mysqli_fetch_array($consult))
-                            {
-                                $total_bloqueos = 0;
-                                $i++;
-                                $id_rule = $rows['id_rule'];
-                                //optener totales de bloqueos por reglas
-                                $consult2 = mysqli_query($link,"SELECT * FROM bloqueo 
-                                                            INNER JOIN detalle_rule 
-                                                            ON bloqueo.idN = detalle_rule.numero_rule_detalle 
-                                                            INNER JOIN rules 
-                                                            ON detalle_rule.id_rule = rules.id_rule 
-                                                            WHERE bloqueo.activo_bloqueo = 1 
-                                                            AND bloqueo.fecha_bloqueo BETWEEN '$mes' AND '$meshoy'
-                                                            AND rules.id_rule = '$id_rule'");
-                                $total_bloqueos = mysqli_num_rows($consult2);
-                            
-                                if($rows['inicio_rule'] == 0){
-                                    //optener el total
-                                    $total_bloqueos_other += $total_bloqueos;
-                                } else {
-                                    echo '["'.$rows['nombre_rule'].'", '.$total_bloqueos.' ],';
-                                }
-                            }
-                            //para los otros tipos de ataques
-                            echo '["Otras Reglas", '.$total_bloqueos_other.' ]';
-                            ?>
-                        ],
-                        type : 'donut',
-                        onclick: function (d, i) { 
-                            //alert(d.id);
-                            if(d.id === 'Otras Reglas'){
-                                setTimeout("location.href = 'other_tipo_bloqueo.php?tipo!="+d.id+"'",100);
-                            } else {
-                                setTimeout("location.href = 'tipo_bloqueo.php?tipo!="+d.id+"&fecha1!=<?php echo $mes; ?>&fecha2!=<?php echo $meshoy; ?>'",100);
-                            }
-                        },
-                    },
-                    donut: {
-                        title: "Ultimo Mes",
-                        label: {
-                            format: function (value, ratio, id) {
-                                return d3.format(',')(value);
-                            }
-                        }
-                    },
-                    tooltip: {
-                        grouped: false,
-                        format: {
-                            value: function (value, ratio, id) {
-                                return d3.format(',')(value);
-                            }
-                        }
-                    },
-                    legend: {
-                        show: true
-                    },
-                });
-                $("#chart3").html(chart3.element);
             });
         </script>
-
         <!-- <script src="js/highcharts.js"></script>
         <script src="js/exporting.js"></script>
         <script src="js/export-data.js"></script> -->
@@ -4153,83 +3564,23 @@
         <!-- grafica de barra de dominios -->
         <script type="text/javascript">
             $(document).on('click','#graficoDominio',function() {
-                Highcharts.chart('containerBar', {
-
-                chart: {
-                    type: 'column'
-                },
-
-                title: {
-                    text: 'Ataques por dominios'
-                },
-
-                subtitle: {
-                    text: 'Dominios'
-                },
-
-                xAxis: {
-                    categories: [
-                    <?php
-                        $consult = mysqli_query($link,"SELECT DISTINCT server FROM bloqueo");
-                        while($row = mysqli_fetch_array($consult)){
-                            $nombre_dominio = addslashes($row['server']);
-                            //obtener si termina en doble comilla
-                            $caracter = substr(trim($row['server']), -1); 
-                            if ($caracter != '"') 
-                            {
-                                echo '"'.$nombre_dominio.'",';
-                            }
-                        }
-                    ?>
-                    ],
-                    title: {
-                        text: 'Dominios'
-                    }
-                },
-
-                yAxis: {
-                    title: {
-                        text: 'Total ataques'
-                    },
-                },
-
-                tooltip: {
-                    pointFormat: 'Total ataques: <b>{point.y:.0f}</b>'
-                },
-
-                series: [
-                  <?php
-                    $consult = mysqli_query($link,"SELECT DISTINCT server FROM bloqueo");
-                    $total_dominios = mysqli_num_rows($consult);
-                    $position = 1;
-                    while($row = mysqli_fetch_array($consult)){
-                        $total_bloqueo_dominio = 0;
-                        $nombre_dominio = addslashes($row['server']);
-                        $caracter = substr(trim($row['server']), -1); 
-                        if ($caracter != '"') 
-                        {
-                         
-                            $consultDos = mysqli_query($link,"SELECT * FROM bloqueo WHERE bloqueo.server = '$nombre_dominio'");
-                            $total_bloqueo_dominio = mysqli_num_rows($consultDos);
-
-                             echo '{ name: "'.$nombre_dominio.'",';
-                             echo 'data: [';
-
-                             for($i = 1; $i <= $total_dominios; $i++){
-                                if ($i != $position) {
-                                    echo 'null,';
-                                } else {
-                                    echo $total_bloqueo_dominio.',';
-                                }
-                             }
-                             echo '] },';
-
-                             $position++;
-                        }
-                    }
-                  ?>
-                ]
-
+                $("#containerBar").html('<div class="loading"><i class="fa fa-refresh fa-spin fa-2x"></i><br>Cargando datos de 62M registros...</div>');
+                $.getJSON('controller/ajax_home_charts.php?action=ataques_por_dominio', function(data) {
+                    Highcharts.chart('containerBar', {
+                        chart: { type: 'column' },
+                        title: { text: 'Ataques por dominios (Top 20)' },
+                        xAxis: {
+                            type: 'category',
+                            title: { text: 'Dominios' }
+                        },
+                        yAxis: { title: { text: 'Total ataques' } },
+                        legend: { enabled: false },
+                        series: [{
+                            name: 'Ataques',
+                            colorByPoint: true,
+                            data: data
+                        }]
+                    });
                 });
             });
         </script>
@@ -4291,125 +3642,39 @@
         <!-- grafica de ataque ultima semana  1-->
         <script>
             $(document).on('click','#graficoP',function() {
-                Highcharts.chart('container3', {
-                      chart: {
-                        plotBackgroundColor: null,
-                        plotBorderWidth: null,
-                        plotShadow: false,
-                        type: 'pie'
-                      },
-                      title: {
-                        text: 'Grafico de tipos de ataques'
-                      },
-                      tooltip: {
-                        pointFormat: '{series.name}: <b>{point.y:.0f}</b>'
-                      },
-                      plotOptions: {
-                        pie: {
-                          allowPointSelect: true,
-                          cursor: 'pointer',
-                          dataLabels: {
-                            enabled: true,
-                            format: '<b>{point.name}</b>: {point.y:.0f}',
-                            style: {
-                              color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
-                            }
-                          }
-                        }
-                      },
+                $("#container3").html('<div class="loading"><i class="fa fa-refresh fa-spin fa-2x"></i><br>Cargando...</div>');
+                $.getJSON('controller/ajax_home_charts.php?action=tipos_ataque_global', function(raw_data) {
+                    var formatted_data = raw_data.map(function(item) {
+                        return { name: item[0], y: item[1] };
+                    });
+                    Highcharts.chart('container3', {
+                      chart: { type: 'pie' },
+                      title: { text: 'Grafico de tipos de ataques' },
                       series: [{
-                        name: '',
+                        name: 'Ataques',
                         colorByPoint: true,
-                        point:{
-                            events:{
-                                click: function (event) {
-                                    //alert(this.name);
-                                    //setTimeout("location.href = 'bloqueo_pais.php?pais!="+this.name+"'",100);
-                                    setTimeout("location.href = 'tipo_bloqueo.php?tipo!="+this.name+"&fecha1!=<?php echo ''; ?>&fecha2!=<?php echo ''; ?>'",100);
-                                }
-                            }
-                        },
-                        data: [
-                        <?php
-                            $consult = mysqli_query($link,"SELECT * FROM rules WHERE rules.activo_rule = 1");
-                            //optener el total de reglas
-                            $total = mysqli_num_rows($consult);
-                            $i = 1;
-                            while($rows = mysqli_fetch_array($consult))
-                            {
-                                $total_bloqueos = 0;
-                                $i++;
-                                $id_rule = $rows['id_rule'];
-                                //optener totales de bloqueos por reglas
-                                $consult2 = mysqli_query($link,"SELECT * FROM bloqueo 
-                                                            INNER JOIN detalle_rule 
-                                                            ON bloqueo.idN = detalle_rule.numero_rule_detalle 
-                                                            INNER JOIN rules 
-                                                            ON detalle_rule.id_rule = rules.id_rule 
-                                                            WHERE bloqueo.activo_bloqueo = 1 AND rules.id_rule = '$id_rule'");
-                                $total_bloqueos = mysqli_num_rows($consult2);
-                            
-                                echo '{ name: "'.$rows['nombre_rule'].'", y:'.$total_bloqueos.' },';
-                            }
-                            ?>
-                        ]
+                        data: formatted_data
                       }]
                     });
+                });
             });
         </script>
 
         <!-- grafica de ataques ultima semana 2 -->
         <script>
             $(document).on('click','#graficoP',function() {
-                Highcharts.chart('container4', {
-                      chart: {
-                        plotBackgroundColor: null,
-                        plotBorderWidth: null,
-                        plotShadow: false,
-                        type: 'pie'
-                      },
-                      title: {
-                        text: 'Grafico de tipos de ataques por pais'
-                      },
-                      tooltip: {
-                        pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
-                      },
-                      plotOptions: {
-                        pie: {
-                          allowPointSelect: true,
-                          cursor: 'pointer',
-                          dataLabels: {
-                            enabled: true,
-                            format: '<b>{point.name}</b>: {point.y:.0f}',
-                            style: {
-                              color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
-                            }
-                          }
-                        }
-                      },
+                $("#container4").html('<div class="loading"><i class="fa fa-refresh fa-spin fa-2x"></i><br>Cargando...</div>');
+                $.getJSON('controller/ajax_home_charts.php?action=ataques_por_pais', function(data) {
+                    Highcharts.chart('container4', {
+                      chart: { type: 'pie' },
+                      title: { text: 'Grafico de tipos de ataques por pais' },
                       series: [{
-                        name: '',
+                        name: 'Países',
                         colorByPoint: true,
-                        data: [
-                        <?php
-                            $consult = mysqli_query($link,"SELECT * FROM bloqueo_pais
-                                                    INNER JOIN paises
-                                                    ON bloqueo_pais.id_pais = paises.id_pais");
-                            
-                            while($rows = mysqli_fetch_array($consult))
-                            {
-                                $nombre_pais = $rows['nombre'];
-                                $total_bloqueos = $rows['total_bloqueo'];
-                                $codigo_p = $rows['iso'];
-                            
-                                if ($total_bloqueos > 0) {
-                                    echo '{ name: "'.$nombre_pais.'", y:'.$total_bloqueos.'},';
-                                }
-                            }
-                        ?>
-                        ]
+                        data: data
                       }]
                     });
+                });
             });
         </script>
 
@@ -4636,37 +3901,27 @@
             $(document).ready(function(){
                 $(document).on('click', '#graficoVisita', function(e){
                     e.preventDefault();
-                    
-                    //grafica de linea de tiempo
-                    var line = new Morris.Line({
-                        element          : 'line-chart4',
-                        resize           : true,
-                        data: [
-                        <?php
-                            $consult = mysqli_query($link,"SELECT * FROM grafica_visitas_dominio");
-                                
-                            while($rows = mysqli_fetch_array($consult))
-                            {
-                                $fecha_visita = $rows['fecha_visita'];
-                                $totalPorFechaVisita = $rows['total_visita'];
-
-                                echo '{ y: "'.$fecha_visita.'", item1: '.$totalPorFechaVisita.'},';
-                            }
-                        ?>
-                        ],
-                        xkey: 'y',
-                        ykeys: ['item1'],
-                        labels: ['Total visitas'],
-                        lineColors: ['#0a63a4'],
-                        lineWidth: 2,
-                        hideHover: 'auto',
-                        gridTextColor: "#888888",
-                        gridStrokeWidth: 0.4,
-                        pointSize: 4,
-                        pointStrokeColors: ["#0a63a4"],
-                        gridLineColor: "#888888",
-                        gridTextFamily: "Open Sans",
-                        gridTextSize: 10
+                    $("#line-chart4").html('<div class="loading"><i class="fa fa-refresh fa-spin fa-2x"></i></div>');
+                    $.getJSON('controller/ajax_home_charts.php?action=timeline_visitas', function(data) {
+                        $("#line-chart4").empty();
+                        var line = new Morris.Line({
+                            element          : 'line-chart4',
+                            resize           : true,
+                            data: data,
+                            xkey: 'y',
+                            ykeys: ['item1'],
+                            labels: ['Total visitas'],
+                            lineColors: ['#0a63a4'],
+                            lineWidth: 2,
+                            hideHover: 'auto',
+                            gridTextColor: "#888888",
+                            gridStrokeWidth: 0.4,
+                            pointSize: 4,
+                            pointStrokeColors: ["#0a63a4"],
+                            gridLineColor: "#888888",
+                            gridTextFamily: "Open Sans",
+                            gridTextSize: 10
+                        });
                     });
                 });
             });
@@ -4675,101 +3930,23 @@
         <!-- grafica de barra de visita por dominios -->
         <script type="text/javascript">
             $(document).on('click','#graficoVisita',function() {
-                Highcharts.chart('containerBarDominio', {
-
-                chart: {
-                    type: 'column'
-                },
-
-                title: {
-                    text: 'Visitas por dominio'
-                },
-
-                subtitle: {
-                    text: 'Dominios'
-                },
-
-                xAxis: {
-                    categories: [
-                    <?php
-                        $consult = mysqli_query($link,"SELECT
-                                                        LOWER(
-                                                            TRIM(
-                                                                IF(
-                                                                    LOWER(TRIM(dominio)) LIKE 'www.%',
-                                                                    SUBSTRING(TRIM(dominio), 5),
-                                                                    TRIM(dominio)
-                                                                )
-                                                            )
-                                                        ) AS dominio_key,
-                                                        MAX(CASE WHEN LOWER(TRIM(dominio)) LIKE 'www.%' THEN TRIM(dominio) ELSE '' END) AS dominio_www,
-                                                        MAX(CASE WHEN LOWER(TRIM(dominio)) NOT LIKE 'www.%' THEN TRIM(dominio) ELSE '' END) AS dominio_plain,
-                                                        SUM(total_visita) as total
-                                                    FROM grafica_visitas
-                                                    GROUP BY dominio_key
-                                                    ORDER BY dominio_key");
-                        while($row = mysqli_fetch_array($consult)){
-                            $nombre_dominio = addslashes(!empty($row['dominio_www']) ? $row['dominio_www'] : $row['dominio_plain']);
-                            echo '"'.$nombre_dominio.'",';
-                        }
-                    ?>
-                    ],
-                    title: {
-                        text: 'Dominios'
-                    }
-                },
-
-                yAxis: {
-                    title: {
-                        text: 'Total visitas'
-                    },
-                },
-
-                tooltip: {
-                    pointFormat: 'Total visitas: <b>{point.y:.0f}</b>'
-                },
-
-                series: [
-                    <?php
-                        $consult = mysqli_query($link,"SELECT
-                                                        LOWER(
-                                                            TRIM(
-                                                                IF(
-                                                                    LOWER(TRIM(dominio)) LIKE 'www.%',
-                                                                    SUBSTRING(TRIM(dominio), 5),
-                                                                    TRIM(dominio)
-                                                                )
-                                                            )
-                                                        ) AS dominio_key,
-                                                        MAX(CASE WHEN LOWER(TRIM(dominio)) LIKE 'www.%' THEN TRIM(dominio) ELSE '' END) AS dominio_www,
-                                                        MAX(CASE WHEN LOWER(TRIM(dominio)) NOT LIKE 'www.%' THEN TRIM(dominio) ELSE '' END) AS dominio_plain,
-                                                        SUM(total_visita) as total
-                                                    FROM grafica_visitas
-                                                    GROUP BY dominio_key
-                                                    ORDER BY dominio_key");
-                        $total_visita_dominio = mysqli_num_rows($consult);
-                        $position = 1;
-                        while($row = mysqli_fetch_array($consult))
-                        {
-                            $nombre_dominio = addslashes(!empty($row['dominio_www']) ? $row['dominio_www'] : $row['dominio_plain']);
-                            $total_visita = $row['total'];
-
-                            echo '{ name: "'.$nombre_dominio.'",';
-                            echo 'data: [';
-                            for($i = 1; $i <= $total_visita_dominio; $i++){
-                                if ($i != $position) {
-                                    echo 'null,';
-                                } else {
-                                    echo $total_visita.',';
-                                }
-                            }
-                            echo '] },';
-
-                            $position++;
-                        }
-                  ?>
-                ]
-
+                $("#containerBarDominio").html('<div class="loading"><i class="fa fa-refresh fa-spin fa-2x"></i><br>Cargando datos de 62M registros...</div>');
+                $.getJSON('controller/ajax_home_charts.php?action=visitas_por_dominio', function(data) {
+                    Highcharts.chart('containerBarDominio', {
+                        chart: { type: 'column' },
+                        title: { text: 'Visitas por dominio (Top 20)' },
+                        xAxis: {
+                            type: 'category',
+                            title: { text: 'Dominios' }
+                        },
+                        yAxis: { title: { text: 'Total visitas' } },
+                        legend: { enabled: false },
+                        series: [{
+                            name: 'Visitas',
+                            colorByPoint: true,
+                            data: data
+                        }]
+                    });
                 });
             });
         </script>
