@@ -5,8 +5,12 @@
 
     $cronLock = waf_acquire_cron_lock('new_grafica_principal');
 
-	$fecha1 = mysqli_real_escape_string($link, $_POST['fecha1']);
-	$fecha2 = mysqli_real_escape_string($link, $_POST['fecha2']);
+	$fecha1_raw = mysqli_real_escape_string($link, $_POST['fecha1']);
+	$fecha2_raw = mysqli_real_escape_string($link, $_POST['fecha2']);
+
+    // Extraer solo la fecha (YYYY-MM-DD) para evitar error si ya trae hora
+    $fecha1 = substr($fecha1_raw, 0, 10);
+    $fecha2 = substr($fecha2_raw, 0, 10);
 
     $query = mysqli_query($link,"TRUNCATE grafica_consulta") or die(mysqli_error($link));
 
@@ -23,7 +27,7 @@
              UNION
              SELECT fecha_bloqueo_ip2 AS fecha_bloqueo
              FROM bloqueo_ip
-             WHERE fecha_bloqueo_ip2 BETWEEN '$fecha1' AND '$fecha2'
+             WHERE fecha_bloqueo_ip2 BETWEEN '$fecha1 00:00:00' AND '$fecha2 23:59:59'
          ) fechas
          LEFT JOIN (
              SELECT DATE(fecha_bloqueo) AS fecha_bloqueo, COUNT(*) AS total_waf
@@ -34,7 +38,7 @@
          LEFT JOIN (
              SELECT fecha_bloqueo_ip2 AS fecha_bloqueo, COUNT(*) AS total_fuerza
              FROM bloqueo_ip
-             WHERE fecha_bloqueo_ip2 BETWEEN '$fecha1' AND '$fecha2'
+             WHERE fecha_bloqueo_ip2 BETWEEN '$fecha1 00:00:00' AND '$fecha2 23:59:59'
              GROUP BY fecha_bloqueo_ip2
          ) fuerza ON fuerza.fecha_bloqueo = fechas.fecha_bloqueo
          ORDER BY fechas.fecha_bloqueo ASC"

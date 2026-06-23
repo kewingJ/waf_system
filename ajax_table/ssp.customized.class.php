@@ -267,7 +267,7 @@ class SSP {
         $recordsFiltered = $resFilterLength[0][0];
 
         // Total data set length
-        $resTotalLength = SSP::sql_exec( $db,
+        $resTotalLength = SSP::sql_exec( $db, array(),
             "SELECT COUNT(`{$primaryKey}`)
 			 FROM   `$table`"
         );
